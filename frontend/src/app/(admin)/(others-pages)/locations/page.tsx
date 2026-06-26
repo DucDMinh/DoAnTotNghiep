@@ -7,7 +7,10 @@ interface Location {
   id: string;
   name: string;
   description?: string;
-  province?: string;
+  province_id?: string;
+  provinces?: {
+    name: string;
+  };
   lat: number;
   lng: number;
   img: string | null;
@@ -158,7 +161,7 @@ export default function LocationsPage() {
                       {loc.name}
                     </td>
                     <td className="px-6 py-4">
-                      {loc.province}
+                      {loc.provinces?.name || "Chưa cập nhật"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button className="font-medium text-blue-600 hover:underline mr-3">
