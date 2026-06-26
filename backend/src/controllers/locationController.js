@@ -3,7 +3,7 @@ import { supabase } from '../config/supabaseClient.js';
 
 export const addLocation = async (ctx) => {
     try {
-        const { name, lat, lng } = ctx.request.body;
+        const { name, lat, lng, description, province, difficulty_level, rating } = ctx.request.body;
         const file = ctx.request.file;
 
         if (!name || lat === undefined || lng === undefined) {
@@ -32,7 +32,11 @@ export const addLocation = async (ctx) => {
             name,
             lat,
             lng,
-            img: imageUrl
+            img: imageUrl,
+            description,
+            province,
+            difficulty_level,
+            rating
         });
 
         ctx.status = 201;
@@ -61,6 +65,7 @@ export async function getAllLocations(ctx) {
             message: "Lấy danh sách địa điểm thành công!",
             data: locations
         };
+        console.log("Lấy danh sách địa điểm thành công:", locations);
     } catch (error) {
         ctx.status = 500;
         ctx.body = {

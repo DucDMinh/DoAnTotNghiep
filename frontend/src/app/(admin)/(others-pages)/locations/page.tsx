@@ -1,41 +1,50 @@
-"use client"; // Bắt buộc phải có để dùng React Hooks
+"use client";
 import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+import { supabase } from "@/utils/supabaseClient";
 
-// Định nghĩa kiểu dữ liệu (TypeScript) cho 1 địa điểm
-type Location = {
+interface Location {
   id: string;
   name: string;
+  description?: string;
+  province?: string;
   lat: number;
   lng: number;
   img: string | null;
-};
+  difficulty_level?: string;
+  rating?: number;
+  created_at?: string;
+}
 
 export default function LocationsPage() {
-  // 1. Tạo biến state để chứa dữ liệu từ Backend
   const [locations, setLocations] = useState<Location[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Trạng thái đang tải
-
-  // 2. Hàm gọi API từ Koa.js Backend
+  const [isLoading, setIsLoading] = useState(true);
   const fetchLocations = async () => {
+    const cachedData = sessionStorage.getItem("locations_cache");
+
+    if (cachedData) {
+      console.log("Đã lấy dữ liệu từ Cache (không gọi API)");
+      setLocations(JSON.parse(cachedData));
+      setIsLoading(false);
+      return;
+    }
     try {
       const response = await fetch("http://localhost:8000/locations");
-
       const result = await response.json();
-      console.log("Dữ liệu từ API (mở rộng ra xem nhé):", result);
-
+      let finalData = [];
       if (Array.isArray(result)) {
-        setLocations(result);
+        finalData = result;
       } else if (result.data && Array.isArray(result.data)) {
-        setLocations(result.data);
+        finalData = result.data;
       } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
-        setLocations(result.data.data);
+        finalData = result.data.data;
       } else if (result.success && result.data) {
-        setLocations([result.data]);
-      } else {
-        console.error("Không tìm thấy mảng dữ liệu. Cấu trúc đang có:", result);
-        setLocations([]);
+        finalData = [result.data];
       }
+      setLocations(finalData);
+
+      sessionStorage.setItem("locations_cache", JSON.stringify(finalData));
+
     } catch (error) {
       console.error("Lỗi kết nối đến máy chủ:", error);
     } finally {
@@ -44,7 +53,50 @@ export default function LocationsPage() {
   };
   useEffect(() => {
     fetchLocations();
+
+    const locationChannel = supabase
+      .channel('custom-all-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'locations'
+        },
+        (payload) => {
+          console.log('Phát hiện thay đổi từ Database:', payload);
+          sessionStorage.removeItem("locations_cache");
+          fetchLocations();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(locationChannel);
+    };
   }, []);
+
+  useEffect(() => {
+    console.log("Dữ liệu địa điểm đã được cập nhật:", locations);
+  }, [locations]);
+
+  const deleteLocation = async (id: string, name: string) => {
+    if (confirm(`Bạn có chắc chắn muốn xóa địa điểm "${name}" không?`)) {
+      fetch(`http://localhost:8000/locations/${id}`, {
+        method: "DELETE",
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Lỗi khi xóa địa điểm");
+          }
+          sessionStorage.removeItem("locations_cache");
+          fetchLocations();
+        })
+        .catch((error) => {
+          console.error("Lỗi:", error);
+          alert("Đã xảy ra lỗi khi xóa địa điểm.");
+        });
+    }
+  }
 
   return (
     <div>
@@ -66,7 +118,7 @@ export default function LocationsPage() {
               <tr>
                 <th className="px-6 py-3">Hình ảnh</th>
                 <th className="px-6 py-3">Tên địa điểm</th>
-                <th className="px-6 py-3">Tọa độ (Lat, Lng)</th>
+                <th className="px-6 py-3">Tỉnh thành</th>
                 <th className="px-6 py-3 text-right">Hành động</th>
               </tr>
             </thead>
@@ -106,13 +158,13 @@ export default function LocationsPage() {
                       {loc.name}
                     </td>
                     <td className="px-6 py-4">
-                      {loc.lat}, {loc.lng}
+                      {loc.province}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button className="font-medium text-blue-600 hover:underline mr-3">
                         Sửa
                       </button>
-                      <button className="font-medium text-red-600 hover:underline">
+                      <button className="font-medium text-red-600 hover:underline" onClick={() => deleteLocation(loc.id, loc.name)}>
                         Xóa
                       </button>
                     </td>

@@ -13,12 +13,11 @@ export const createLocation = async (locationData) => {
 export async function getAllLocations() {
     const { data, error } = await supabase
         .from('locations')
-        .select('*');
+        .select('*')
+        .order('id', { ascending: false });
+
     if (error) throw error;
-    if (data.length === 0) {
-        return null;
-    }
-    return data[0];
+    return data;
 }
 
 export const updateLocationById = async (id, updateData) => {
