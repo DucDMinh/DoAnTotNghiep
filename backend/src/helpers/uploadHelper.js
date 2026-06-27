@@ -1,17 +1,22 @@
-import { supabase } from '../config/supabaseClient.js'; // Nhớ trỏ đúng đường dẫn file client của bạn
+import { supabase } from '../config/supabaseClient.js';
 
-export const uploadImageToStorage = async (file, folder) => {
+export const uploadImageToStorage = async (file, name) => {
     try {
+        if (!file || !file.buffer) {
+            throw new Error("Không tìm thấy dữ liệu file hợp lệ!");
+        }
+
         const fileExtension = file.originalname.split('.').pop();
         const uniqueFileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExtension}`;
-
-        const filePath = `${folder}/${uniqueFileName}`;
+        const filePath = `${name}/${uniqueFileName}`;
+        const cleanBuffer = Buffer.from(file.buffer);
 
         const { data, error } = await supabase.storage
             .from('image')
-            .upload(filePath, file.buffer, {
-                contentType: file.mimetype, // Khai báo loại file (image/png, image/jpeg...)
-                upsert: false // Không cho phép ghi đè
+            .upload(filePath, cleanBuffer, {
+                contentType: file.mimetype,
+                duplex: 'half',
+                upsert: false
             });
 
         if (error) {
@@ -19,7 +24,6 @@ export const uploadImageToStorage = async (file, folder) => {
             throw error;
         }
 
-        // 3. Lấy đường link Public để lưu vào Database và hiển thị trên Web
         const { data: publicUrlData } = supabase.storage
             .from('image')
             .getPublicUrl(filePath);
@@ -27,7 +31,29 @@ export const uploadImageToStorage = async (file, folder) => {
         return publicUrlData.publicUrl;
 
     } catch (error) {
-        console.error("Lỗi trong hàm uploadImageToStorage:", error);
-        throw new Error("Không thể upload ảnh, vui lòng thử lại sau.");
+        console.error("Lỗi chi tiết trong hàm uploadImageToStorage:", error);
+        throw error;
+    }
+};
+
+export const deleteImageFromStorage = async (imageUrl) => {
+    if (!imageUrl) return;
+
+    try {
+        const BUCKET_NAME = 'image';
+        const pathParts = imageUrl.split(`${BUCKET_NAME}/`);
+
+        if (pathParts.length === 2) {
+            const filePath = pathParts[1];
+            const { error } = await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+
+            if (error) {
+                console.error("Lỗi khi xóa ảnh trên Supabase:", error.message);
+            } else {
+                console.log("Đã dọn dẹp ảnh cũ trên Storage thành công!");
+            }
+        }
+    } catch (error) {
+        console.error("Lỗi ở hàm deleteImageFromStorage:", error);
     }
 };

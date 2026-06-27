@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
+import { AddLocationModal } from "@/components/modals/addLocation";
 
 interface Location {
   id: string;
@@ -22,6 +23,62 @@ interface Location {
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mapLink, setMapLink] = useState("");
+
+  const handleExtractFromLink = () => {
+    if (!mapLink) return;
+
+    const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+    const match = mapLink.match(regex);
+
+    if (match) {
+      const lat = match[1];
+      const lng = match[2];
+      setFormData((prev) => ({ ...prev, lat, lng }));
+      alert(`Thành công! Tọa độ: ${lat}, ${lng}`);
+    } else {
+      alert("Không tìm thấy tọa độ. Vui lòng đảm bảo link có chứa ký tự '@tọa_độ' (Copy từ thanh địa chỉ trình duyệt).");
+    }
+  };
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    lat: "",
+    lng: "",
+    province_id: "",
+  });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+
+  const fetchProvinces = async () => {
+    const cachedData = sessionStorage.getItem("provinces_cache");
+    if (cachedData) {
+      setProvinces(JSON.parse(cachedData));
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:8000/provinces");
+      const result = await response.json();
+      let finalData = [];
+      if (Array.isArray(result)) {
+        finalData = result;
+      } else if (result.data && Array.isArray(result.data)) {
+        finalData = result.data;
+      } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
+        finalData = result.data.data;
+      } else if (result.success && result.data) {
+        finalData = [result.data];
+      }
+      setProvinces(finalData);
+      sessionStorage.setItem("provinces_cache", JSON.stringify(finalData));
+    } catch (error) {
+      console.error("Lỗi kết nối đến máy chủ:", error);
+    }
+  };
+
   const fetchLocations = async () => {
     const cachedData = sessionStorage.getItem("locations_cache");
 
@@ -47,40 +104,54 @@ export default function LocationsPage() {
       setLocations(finalData);
 
       sessionStorage.setItem("locations_cache", JSON.stringify(finalData));
-
     } catch (error) {
       console.error("Lỗi kết nối đến máy chủ:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     fetchLocations();
-
     const locationChannel = supabase
-      .channel('custom-all-channel')
+      .channel("custom-location-channel")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'locations'
+          event: "*",
+          schema: "public",
+          table: "locations",
         },
         (payload) => {
-          console.log('Phát hiện thay đổi từ Database:', payload);
+          console.log("Phát hiện thay đổi bảng locations:", payload);
           sessionStorage.removeItem("locations_cache");
           fetchLocations();
         }
       )
       .subscribe();
+
+    const provinceChannel = supabase
+      .channel("custom-province-channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "provinces",
+        },
+        (payload) => {
+          console.log("Phát hiện thay đổi bảng provinces:", payload);
+          sessionStorage.removeItem("provinces_cache");
+          fetchProvinces();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(locationChannel);
+      supabase.removeChannel(provinceChannel);
     };
-  }, []);
-
-  useEffect(() => {
-    console.log("Dữ liệu địa điểm đã được cập nhật:", locations);
-  }, [locations]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deleteLocation = async (id: string, name: string) => {
     if (confirm(`Bạn có chắc chắn muốn xóa địa điểm "${name}" không?`)) {
@@ -99,7 +170,55 @@ export default function LocationsPage() {
           alert("Đã xảy ra lỗi khi xóa địa điểm.");
         });
     }
-  }
+  };
+  useEffect(() => {
+    console.log("Provinces data has been updated:", provinces);
+  }, [provinces]);
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const submitData = new FormData();
+    submitData.append("name", formData.name);
+    if (formData.description) submitData.append("description", formData.description);
+    if (formData.lat) submitData.append("lat", formData.lat);
+    if (formData.lng) submitData.append("lng", formData.lng);
+    if (formData.province_id) submitData.append("province_id", formData.province_id);
+    if (imageFile) submitData.append("image", imageFile);
+
+    try {
+      const response = await fetch("http://localhost:8000/locations", {
+        method: "POST",
+        body: submitData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Lỗi khi thêm địa điểm");
+      }
+
+      setIsAddModalOpen(false);
+      setFormData({ name: "", description: "", lat: "", lng: "", province_id: "" });
+      setImageFile(null);
+
+      sessionStorage.removeItem("locations_cache");
+      fetchLocations();
+
+    } catch (error) {
+      console.error("Lỗi:", error);
+      alert("Đã xảy ra lỗi khi thêm địa điểm mới.");
+    }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleOpenModal = async () => {
+    setIsAddModalOpen(true);
+    await fetchProvinces();
+  };
 
   return (
     <div>
@@ -110,7 +229,10 @@ export default function LocationsPage() {
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             Danh sách địa điểm
           </h3>
-          <button className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
+          <button
+            onClick={() => handleOpenModal()}
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+          >
             + Thêm địa điểm
           </button>
         </div>
@@ -122,7 +244,7 @@ export default function LocationsPage() {
                 <th className="px-6 py-3">Hình ảnh</th>
                 <th className="px-6 py-3">Tên địa điểm</th>
                 <th className="px-6 py-3">Tỉnh thành</th>
-                <th className="px-6 py-3 text-right">Hành động</th>
+                <th className="px-15 py-3 text-right">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +274,7 @@ export default function LocationsPage() {
                           className="h-12 w-12 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-200 text-xs text-gray-500">
                           No Image
                         </div>
                       )}
@@ -164,11 +286,19 @@ export default function LocationsPage() {
                       {loc.provinces?.name || "Chưa cập nhật"}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="font-medium text-blue-600 hover:underline mr-3">
+                      <button
+                        className="mr-3 font-medium text-blue-600 hover:underline"
+                      >
                         Sửa
                       </button>
-                      <button className="font-medium text-red-600 hover:underline" onClick={() => deleteLocation(loc.id, loc.name)}>
+                      <button
+                        className="mr-3 font-medium text-red-600 hover:underline"
+                        onClick={() => deleteLocation(loc.id, loc.name)}
+                      >
                         Xóa
+                      </button>
+                      <button className="font-medium text-green-600 hover:underline">
+                        Xem chi tiết
                       </button>
                     </td>
                   </tr>
@@ -178,6 +308,21 @@ export default function LocationsPage() {
           </table>
         </div>
       </div>
+      {isAddModalOpen && (
+        <AddLocationModal
+          setIsAddModalOpen={setIsAddModalOpen}
+          formData={formData}
+          setFormData={setFormData}
+          mapLink={mapLink}
+          setMapLink={setMapLink}
+          setImageFile={setImageFile}
+          handleInputChange={handleInputChange}
+          handleExtractFromLink={handleExtractFromLink}
+          handleAddSubmit={handleAddSubmit}
+          provinces={provinces}
+        />
+      )}
+
     </div>
   );
 }

@@ -19,7 +19,6 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-// ĐÃ SỬA: Chỉ giữ lại 2 menu chính của dự án
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -30,6 +29,11 @@ const navItems: NavItem[] = [
     icon: <TableIcon />,
     name: "Quản lý địa điểm",
     path: "/locations",
+  },
+  {
+    icon: <TableIcon />,
+    name: "Quản lý Tỉnh/Thành phố",
+    path: "/provinces",
   },
 ];
 
@@ -257,15 +261,10 @@ const AppSidebar: React.FC = () => {
               >
                 {isExpanded || isHovered || isMobileOpen ? "Menu" : <HorizontaLDots />}
               </h2>
-
-              {/* Chỉ render menu chính, lược bỏ phần "Others" */}
               {renderMenuItems(navItems, "main")}
             </div>
           </div>
         </nav>
-
-        {/* Đã ẩn SidebarWidget vì không cần thiết cho trang Admin quản lý */}
-        {/* {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
       </div>
     </aside>
   );

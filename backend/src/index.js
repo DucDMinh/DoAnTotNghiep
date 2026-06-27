@@ -12,7 +12,11 @@ import routes from './routes/routes.js';
 const app = new Koa();
 const router = new Router();
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use(bodyParser());
 
 app.use(routes.routes()).use(routes.allowedMethods());

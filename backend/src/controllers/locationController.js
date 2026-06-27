@@ -10,8 +10,9 @@ class LocationController extends BaseController {
         try {
             const payload = { ...ctx.request.body };
             const file = ctx.request.file;
+            console.log("Received file:", file); // Debugging line to check the received file
             if (file) {
-                const imageUrl = await uploadImageToStorage(file, 'locations');
+                const imageUrl = await uploadImageToStorage(file, 'locations'); // Specify the folder name in Supabase Storage
                 payload.img = imageUrl;
             }
             const data = await this.repository.create(payload);
@@ -30,22 +31,52 @@ class LocationController extends BaseController {
             const payload = { ...ctx.request.body };
             const file = ctx.request.file;
 
-            if (file) {
-                payload.img = await uploadImageToStorage(file, 'locations');
-            }
-            const data = await this.repository.update(id, payload);
-
-            if (!data) {
+            const oldLocation = await this.repository.getById(id);
+            if (!oldLocation) {
                 ctx.status = 404;
-                ctx.body = { success: false, message: `Không tìm thấy ${this.itemName} để cập nhật (hoặc đã bị xóa)!` };
+                ctx.body = { success: false, message: `Không tìm thấy ${this.itemName} để cập nhật!` };
                 return;
             }
+
+            if (file) {
+                payload.img = await uploadImageToStorage(file);
+
+                if (oldLocation.img) {
+                    await deleteImageFromStorage(oldLocation.img);
+                }
+            }
+
+            const data = await this.repository.update(id, payload);
 
             ctx.status = 200;
             ctx.body = { success: true, message: `Cập nhật ${this.itemName} thành công`, data };
         } catch (error) {
             ctx.status = 500;
             ctx.body = { success: false, message: `Lỗi hệ thống khi cập nhật ${this.itemName}`, error_detail: error.message };
+        }
+    }
+    delete = async (ctx) => {
+        try {
+            const id = ctx.params.id;
+
+            const oldLocation = await this.repository.getById(id);
+            if (!oldLocation) {
+                ctx.status = 404;
+                ctx.body = { success: false, message: `Không tìm thấy ${this.itemName} để xóa!` };
+                return;
+            }
+
+            const data = await this.repository.delete(id);
+
+            if (data && oldLocation.img) {
+                await deleteImageFromStorage(oldLocation.img);
+            }
+
+            ctx.status = 200;
+            ctx.body = { success: true, message: `Xóa ${this.itemName} và dọn dẹp ảnh thành công`, data };
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống khi xóa ${this.itemName}`, error_detail: error.message };
         }
     }
 }
