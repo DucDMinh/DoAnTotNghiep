@@ -27,12 +27,12 @@ const navItems: NavItem[] = [
   },
   {
     icon: <TableIcon />,
-    name: "Quản lý địa điểm",
+    name: "Địa điểm",
     path: "/locations",
   },
   {
     icon: <TableIcon />,
-    name: "Quản lý Tỉnh/Thành phố",
+    name: "Tỉnh/Thành phố",
     path: "/provinces",
   },
 ];

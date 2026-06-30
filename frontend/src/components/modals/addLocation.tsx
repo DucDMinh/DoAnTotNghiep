@@ -2,7 +2,6 @@
 import React from "react";
 import dynamic from "next/dynamic";
 
-// Gọi MapPicker bằng dynamic import để tránh lỗi SSR trong Next.js
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
   ssr: false,
   loading: () => (
@@ -12,7 +11,6 @@ const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
   ),
 });
 
-// Định nghĩa khuôn mẫu Props đã được bổ sung provinces và HTMLSelectElement
 interface AddLocationModalProps {
   setIsAddModalOpen: (isOpen: boolean) => void;
   formData: {
@@ -21,6 +19,7 @@ interface AddLocationModalProps {
     lat: string;
     lng: string;
     province_id: string;
+    difficulty_level: string
   };
   setFormData: React.Dispatch<
     React.SetStateAction<{
@@ -29,6 +28,7 @@ interface AddLocationModalProps {
       lat: string;
       lng: string;
       province_id: string;
+      difficulty_level: string
     }>
   >;
   mapLink: string;
@@ -38,6 +38,7 @@ interface AddLocationModalProps {
   handleExtractFromLink: () => void;
   handleAddSubmit: (e: React.FormEvent) => Promise<void>;
   provinces: { id: string; name: string }[];
+  isSaving: boolean;
 }
 
 export const AddLocationModal: React.FC<AddLocationModalProps> = ({
@@ -51,6 +52,7 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   handleExtractFromLink,
   handleAddSubmit,
   provinces,
+  isSaving
 }) => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm sm:p-6">
@@ -96,7 +98,9 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                     <label className="mb-1 text-xs text-gray-500">Vĩ độ (Lat)</label>
                     <input
                       type="text"
-                      readOnly
+                      name="lat"
+                      onChange={handleInputChange}
+                      required
                       value={formData.lat}
                       placeholder="Chưa chọn..."
                       className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 focus:outline-none dark:bg-gray-700 dark:text-gray-300"
@@ -106,7 +110,9 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                     <label className="mb-1 text-xs text-gray-500">Kinh độ (Lng)</label>
                     <input
                       type="text"
-                      readOnly
+                      name="lng"
+                      onChange={handleInputChange}
+                      required
                       value={formData.lng}
                       placeholder="Chưa chọn..."
                       className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 focus:outline-none dark:bg-gray-700 dark:text-gray-300"
@@ -170,8 +176,19 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                     placeholder="Nhập mô tả về địa điểm này..."
                   ></textarea>
                 </div>
-
-                {/* --- ĐÃ THAY ĐỔI: Chuyển Input thành Select --- */}
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Lưu ý
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                    rows={4}
+                    placeholder="Một số lưu ý khi đến địa điểm này (giá vé vào cửa, đường đi hiểm trở, phải trekking,...)"
+                  ></textarea>
+                </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tỉnh/Thành phố
@@ -190,7 +207,27 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                     ))}
                   </select>
                 </div>
-
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Độ Khó
+                  </label>
+                  <select
+                    name="difficulty_level"
+                    value={formData.difficulty_level}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                    <option value="">-- Chọn độ khó --</option>
+                    <option>
+                      Dễ
+                    </option>
+                    <option>
+                      Trung Bình
+                    </option>
+                    <option>
+                      Khó
+                    </option>
+                  </select>
+                </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Hình ảnh đại diện
@@ -222,9 +259,39 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
           <button
             type="submit"
             form="add-location-form"
-            className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-300"
+            disabled={isSaving}
+            className={`flex items-center justify-center rounded-lg px-5 py-2 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-brand-300 ${isSaving
+              ? "cursor-not-allowed bg-brand-400"
+              : "bg-brand-500 hover:bg-brand-600"
+              }`}
           >
-            Lưu địa điểm
+            {isSaving ? (
+              <>
+                <svg
+                  className="mr-2 h-4 w-4 animate-spin text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Đang lưu...
+              </>
+            ) : (
+              "Lưu địa điểm"
+            )}
           </button>
         </div>
 

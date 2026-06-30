@@ -24,6 +24,7 @@ export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mapLink, setMapLink] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleExtractFromLink = () => {
     if (!mapLink) return;
@@ -48,6 +49,7 @@ export default function LocationsPage() {
     lat: "",
     lng: "",
     province_id: "",
+    difficulty_level: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -151,7 +153,7 @@ export default function LocationsPage() {
       supabase.removeChannel(locationChannel);
       supabase.removeChannel(provinceChannel);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const deleteLocation = async (id: string, name: string) => {
     if (confirm(`Bạn có chắc chắn muốn xóa địa điểm "${name}" không?`)) {
@@ -178,9 +180,11 @@ export default function LocationsPage() {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setIsSaving(true);
     const submitData = new FormData();
     submitData.append("name", formData.name);
     if (formData.description) submitData.append("description", formData.description);
+    if (formData.difficulty_level) submitData.append("difficulty_level", formData.difficulty_level);
     if (formData.lat) submitData.append("lat", formData.lat);
     if (formData.lng) submitData.append("lng", formData.lng);
     if (formData.province_id) submitData.append("province_id", formData.province_id);
@@ -197,7 +201,7 @@ export default function LocationsPage() {
       }
 
       setIsAddModalOpen(false);
-      setFormData({ name: "", description: "", lat: "", lng: "", province_id: "" });
+      setFormData({ name: "", description: "", lat: "", lng: "", province_id: "", difficulty_level: "" });
       setImageFile(null);
 
       sessionStorage.removeItem("locations_cache");
@@ -206,6 +210,8 @@ export default function LocationsPage() {
     } catch (error) {
       console.error("Lỗi:", error);
       alert("Đã xảy ra lỗi khi thêm địa điểm mới.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -320,6 +326,7 @@ export default function LocationsPage() {
           handleExtractFromLink={handleExtractFromLink}
           handleAddSubmit={handleAddSubmit}
           provinces={provinces}
+          isSaving={isSaving}
         />
       )}
 
