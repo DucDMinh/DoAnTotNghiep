@@ -3,12 +3,28 @@ import { Location } from "@/interface"
 import { Popconfirm } from "antd";
 interface LocationTableProps {
     locations: Location[],
-    executeDelete: (id: string, name: string) => Promise<void>
+    executeDelete: (id: string, name: string) => Promise<void>,
+    setIsEditModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setPickLocation: React.Dispatch<React.SetStateAction<Location | undefined>>;
+    setFormData: React.Dispatch<
+        React.SetStateAction<{
+            name: string;
+            description: string;
+            note: string;
+            lat: string;
+            lng: string;
+            province_id: string;
+            difficulty_level: string;
+        }>
+    >;
 }
 
 export const LocationTable: React.FC<LocationTableProps> = ({
     locations,
-    executeDelete
+    executeDelete,
+    setIsEditModalOpen,
+    setPickLocation,
+    setFormData
 }) => {
     return (
         locations.map((loc) => (
@@ -37,13 +53,20 @@ export const LocationTable: React.FC<LocationTableProps> = ({
                 <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                         <button
-                            title="Xem chi tiết"
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                        >
-                            <Eye className="h-4 w-4" />
-                        </button>
-                        <button
                             title="Chỉnh sửa"
+                            onClick={() => {
+                                setPickLocation(loc);
+                                setFormData({
+                                    name: loc.name || "",
+                                    description: loc.description || "",
+                                    note: loc.note || "",
+                                    lat: loc.lat?.toString() || "",
+                                    lng: loc.lng?.toString() || "",
+                                    province_id: loc.province_id || "",
+                                    difficulty_level: loc.difficulty_level || ""
+                                });
+                                setIsEditModalOpen(true);
+                            }}
                             className="rounded-lg p-2 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
                         >
                             <Edit className="h-4 w-4" />

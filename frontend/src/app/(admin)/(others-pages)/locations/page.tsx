@@ -6,7 +6,8 @@ import { AddLocationModal } from "@/components/modals/addLocation";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, MapPin } from "lucide-react";
 import { LocationTable } from "@/components/tables/locationsTable";
-import { Location } from "@/interface"
+import type { Location } from "@/interface"
+import { EditLocationModal } from "@/components/modals/editLocation";
 
 
 export default function LocationsPage() {
@@ -14,8 +15,10 @@ export default function LocationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [mapLink, setMapLink] = useState("");
+  const [pickLocation, setPickLocation] = useState<Location>();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -28,26 +31,66 @@ export default function LocationsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
 
-  const handleExtractFromLink = () => {
+  const handleExtractFromLink = async () => {
     if (!mapLink) {
       toast.error("Vui lòng nhập link Google Maps!");
       return;
     }
-    const place = mapLink.match(/\/place\/([^\/]+)/);
-    if (place && place[1]) {
-      const decodedName = decodeURIComponent(place[1]).replace(/\+/g, ' ');
-      setFormData((prev) => ({ ...prev, name: decodedName }))
+    let cleanLink = mapLink.trim();
+    if (cleanLink.includes("http://") && cleanLink.indexOf("http://") > 0) {
+      cleanLink = "http://" + cleanLink.split("http://")[1];
+    } else if (cleanLink.includes("https://") && cleanLink.indexOf("https://") > 0) {
+      cleanLink = "https://" + cleanLink.split("https://")[1];
     }
-    const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = mapLink.match(regex);
-    if (match) {
-      setFormData((prev) => ({ ...prev, lat: match[1], lng: match[2] }));
-      toast.success("Trích xuất tọa độ thành công!");
-    } else {
-      toast.error("Link không hợp lệ. Vui lòng copy từ thanh địa chỉ.");
+
+    const toastId = toast.loading("Đang trích xuất tọa độ và hình ảnh...");
+
+    try {
+      const response = await fetch(`http://localhost:8000/extract-map?url=${encodeURIComponent(cleanLink)}`);
+      if (!response.ok) throw new Error("API lỗi");
+
+      const result = await response.json();
+      const finalUrl = result.expandedUrl || mapLink;
+      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = finalUrl.match(regex);
+      let extractedName = result.name || "";
+      if (!extractedName && finalUrl.includes('/place/')) {
+        const nameMatch = finalUrl.match(/\/place\/([^/]+)/);
+        if (nameMatch) {
+          extractedName = decodeURIComponent(nameMatch[1].replace(/\+/g, ' '));
+        }
+      }
+      if (match) {
+        setFormData((prev) => ({
+          ...prev,
+          lat: match[1],
+          lng: match[2],
+          ...(extractedName ? { name: extractedName } : {})
+        }));
+      } else {
+        toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
+        return;
+      }
+      if (result.base64) {
+        const file = base64ToFile(result.base64, result.fileName, result.mimeType);
+        setImageFile(file);
+        toast.success("Trích xuất tọa độ và ảnh thành công!", { id: toastId });
+      } else {
+        toast.success("Lấy tọa độ thành công (Không có ảnh xem trước)!", { id: toastId });
+      }
+
+    } catch (error) {
+      console.error(error);
+      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = mapLink.match(regex);
+      if (match) {
+        setFormData((prev) => ({ ...prev, lat: match[1], lng: match[2] }));
+        toast.success("Đã lấy được tọa độ (Chưa lấy được ảnh)!", { id: toastId });
+      } else {
+        toast.error("Không thể trích xuất dữ liệu từ link này.", { id: toastId });
+      }
     }
   };
-
   const executeDelete = async (id: string, name: string) => {
     const toastId = toast.loading(`Đang xóa "${name}"...`);
 
@@ -117,7 +160,7 @@ export default function LocationsPage() {
 
   useEffect(() => {
     fetchLocations();
-
+    fetchProvinces();
     const locationChannel = supabase.channel("custom-location-channel")
       .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, () => {
         sessionStorage.removeItem("locations_cache");
@@ -135,6 +178,17 @@ export default function LocationsPage() {
       supabase.removeChannel(provinceChannel);
     };
   }, []);
+
+  const base64ToFile = (base64String: string, fileName: string, mimeType: string): File => {
+    const arr = base64String.split(',');
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], fileName, { type: mimeType });
+  };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,6 +230,59 @@ export default function LocationsPage() {
     }
   };
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pickLocation) {
+      toast.error("Không tìm thấy dữ liệu địa điểm cần sửa!");
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = toast.loading("Đang cập nhật địa điểm...");
+
+    const submitData = new FormData();
+    submitData.append("name", formData.name);
+    if (formData.description) submitData.append("description", formData.description);
+    if (formData.note) submitData.append("note", formData.note);
+    if (formData.lat) submitData.append("lat", formData.lat);
+    if (formData.lng) submitData.append("lng", formData.lng);
+    if (formData.province_id) submitData.append("province_id", formData.province_id);
+    if (formData.difficulty_level) submitData.append("difficulty_level", formData.difficulty_level);
+    if (imageFile) {
+      submitData.append("image", imageFile);
+    }
+    // MẸO: Nếu API của bạn cần cờ báo xóa ảnh cũ (khi người dùng bấm X xóa ảnh mà không tải ảnh mới)
+    // else if (!oldImageUrl && pickLocation.img) {
+    //     submitData.append("delete_old_image", "true"); 
+    // }
+
+    try {
+      const response = await fetch(`http://localhost:8000/locations/${pickLocation.id}`, {
+        method: "PUT",
+        body: submitData,
+      });
+
+      if (!response.ok) throw new Error("Lỗi khi cập nhật địa điểm");
+
+      toast.success("Cập nhật địa điểm thành công!", { id: toastId });
+
+      setIsEditModalOpen(false);
+      setPickLocation(undefined);
+      setFormData({ name: "", description: "", note: "", lat: "", lng: "", province_id: "", difficulty_level: "" });
+      setImageFile(null);
+      setMapLink("");
+
+      sessionStorage.removeItem("locations_cache");
+      fetchLocations();
+
+    } catch (error) {
+      console.error("Lỗi:", error);
+      toast.error("Cập nhật thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -183,7 +290,6 @@ export default function LocationsPage() {
 
   const handleOpenModal = async () => {
     setIsAddModalOpen(true);
-    await fetchProvinces();
   };
 
   return (
@@ -244,6 +350,9 @@ export default function LocationsPage() {
                 <LocationTable
                   locations={locations}
                   executeDelete={executeDelete}
+                  setIsEditModalOpen={setIsEditModalOpen}
+                  setPickLocation={setPickLocation}
+                  setFormData={setFormData}
                 />
               )}
             </tbody>
@@ -265,6 +374,24 @@ export default function LocationsPage() {
           provinces={provinces}
           isSaving={isSaving}
           imageFile={imageFile}
+        />
+      )}
+
+      {isEditModalOpen && (
+        <EditLocationModal
+          setIsEditModalOpen={setIsEditModalOpen}
+          formData={formData}
+          setFormData={setFormData}
+          mapLink={mapLink}
+          setMapLink={setMapLink}
+          setImageFile={setImageFile}
+          handleInputChange={handleInputChange}
+          handleExtractFromLink={handleExtractFromLink}
+          handleEditSubmit={handleEditSubmit}
+          provinces={provinces}
+          isSaving={isSaving}
+          imageFile={imageFile}
+          pickLocation={pickLocation}
         />
       )}
 

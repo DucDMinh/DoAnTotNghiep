@@ -17,6 +17,8 @@
     "@koa/multer": "^4.0.0",
     "@koa/router": "^15.6.0",
     "@supabase/supabase-js": "^2.108.2",
+    "axios": "^1.18.1",
+    "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
     "koa": "^3.2.1",
     "koa-bodyparser": "^4.4.1",

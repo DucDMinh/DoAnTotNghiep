@@ -1,3 +1,5 @@
+import { Dispatch, SetStateAction } from "react";
+
 export interface Location {
     id: string;
     name: string;
@@ -19,7 +21,7 @@ export interface AddLocationModalProps {
     formData: {
         name: string;
         description: string;
-        note: string; // Đã thêm trường note để tách biệt với description
+        note: string;
         lat: string;
         lng: string;
         province_id: string;
@@ -45,4 +47,38 @@ export interface AddLocationModalProps {
     provinces: { id: string; name: string }[];
     isSaving: boolean;
     imageFile: File | null;
+}
+
+export interface EditLocationModalProps {
+    setIsEditModalOpen: Dispatch<SetStateAction<boolean>>;
+    formData: {
+        name: string;
+        description: string;
+        note: string;
+        lat: string;
+        lng: string;
+        province_id: string;
+        difficulty_level: string;
+    };
+    setFormData: React.Dispatch<
+        React.SetStateAction<{
+            name: string;
+            description: string;
+            note: string;
+            lat: string;
+            lng: string;
+            province_id: string;
+            difficulty_level: string;
+        }>
+    >;
+    mapLink: string;
+    setMapLink: (link: string) => void;
+    setImageFile: (file: File | null) => void;
+    handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    handleExtractFromLink: () => void;
+    handleEditSubmit: (e: React.FormEvent) => Promise<void>;
+    provinces: { id: string; name: string }[];
+    isSaving: boolean;
+    imageFile: File | null;
+    pickLocation?: Location;
 }
