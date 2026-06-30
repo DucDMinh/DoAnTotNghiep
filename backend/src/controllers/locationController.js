@@ -1,6 +1,6 @@
 import { locationRepo } from '../repositories/locationRepository.js';
 import { BaseController } from './baseController.js';
-import { uploadImageToStorage } from '../helpers/uploadHelper.js';
+import { uploadImageToStorage, deleteImageFromStorage } from '../helpers/uploadHelper.js';
 
 class LocationController extends BaseController {
     constructor() {

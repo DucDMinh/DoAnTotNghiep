@@ -1,11 +1,16 @@
 "use client";
 import React from "react";
 import dynamic from "next/dynamic";
+import {
+  X, MapPin, Link as LinkIcon, Image as ImageIcon,
+  UploadCloud, AlertTriangle, FileText, Info, Map
+} from "lucide-react";
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[400px] w-full items-center justify-center rounded-xl bg-gray-100 text-sm text-gray-500">
+    <div className="flex h-[400px] w-full items-center justify-center rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 text-sm text-gray-500 animate-pulse">
+      <Map className="mr-2 h-5 w-5 text-gray-400" />
       Đang tải bản đồ...
     </div>
   ),
@@ -16,19 +21,21 @@ interface AddLocationModalProps {
   formData: {
     name: string;
     description: string;
+    note: string; // Đã thêm trường note để tách biệt với description
     lat: string;
     lng: string;
     province_id: string;
-    difficulty_level: string
+    difficulty_level: string;
   };
   setFormData: React.Dispatch<
     React.SetStateAction<{
       name: string;
       description: string;
+      note: string;
       lat: string;
       lng: string;
       province_id: string;
-      difficulty_level: string
+      difficulty_level: string;
     }>
   >;
   mapLink: string;
@@ -55,34 +62,40 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   isSaving
 }) => {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm sm:p-6">
-      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md sm:p-6 transition-all">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:border dark:border-gray-700">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Thêm địa điểm mới
-          </h2>
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-5 dark:border-gray-700 dark:bg-gray-800/50">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Thêm địa điểm phượt mới
+            </h2>
+          </div>
           <button
             onClick={() => setIsAddModalOpen(false)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
           >
-            ✕
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto p-6">
+        <div className="overflow-y-auto p-6 custom-scrollbar">
           <form id="add-location-form" onSubmit={handleAddSubmit}>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
 
-              {/* CỘT TRÁI: BẢN ĐỒ */}
-              <div className="flex flex-col space-y-4">
+              {/* CỘT TRÁI: BẢN ĐỒ (Chiếm 5 phần) */}
+              <div className="flex flex-col space-y-5 lg:col-span-5">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="mb-2 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Map className="mr-2 h-4 w-4 text-brand-500" />
                     Chọn vị trí trên bản đồ *
                   </label>
-                  <div className="relative z-0 h-[400px] w-full overflow-hidden rounded-xl border border-gray-300 shadow-sm dark:border-gray-600">
+                  <div className="relative z-0 h-[400px] w-full overflow-hidden rounded-xl border border-gray-200 shadow-sm transition-all hover:border-brand-400 dark:border-gray-600">
                     <MapPicker
                       lat={formData.lat}
                       lng={formData.lng}
@@ -94,205 +107,213 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-1 text-xs text-gray-500">Vĩ độ (Lat)</label>
+                  <div className="relative">
+                    <label className="mb-1 block text-xs font-medium text-gray-500">Vĩ độ (Lat)</label>
                     <input
                       type="text"
                       name="lat"
                       onChange={handleInputChange}
                       required
                       value={formData.lat}
-                      placeholder="Chưa chọn..."
-                      className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 focus:outline-none dark:bg-gray-700 dark:text-gray-300"
+                      placeholder="VD: 21.0285"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900/50 dark:text-gray-300"
                     />
                   </div>
-                  <div>
-                    <label className="mb-1 text-xs text-gray-500">Kinh độ (Lng)</label>
+                  <div className="relative">
+                    <label className="mb-1 block text-xs font-medium text-gray-500">Kinh độ (Lng)</label>
                     <input
                       type="text"
                       name="lng"
                       onChange={handleInputChange}
                       required
                       value={formData.lng}
-                      placeholder="Chưa chọn..."
-                      className="w-full rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 focus:outline-none dark:bg-gray-700 dark:text-gray-300"
+                      placeholder="VD: 105.8542"
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900/50 dark:text-gray-300"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* CỘT PHẢI: FORM NHẬP */}
-              <div className="flex flex-col space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tên địa điểm *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    placeholder="VD: Đỉnh Fansipan"
-                  />
-                </div>
+              {/* CỘT PHẢI: FORM NHẬP (Chiếm 7 phần) */}
+              <div className="flex flex-col space-y-5 lg:col-span-7">
 
-                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
-                  <label className="mb-2 block text-sm font-medium text-blue-800 dark:text-blue-300">
-                    Lấy tọa độ nhanh từ link Google Maps (Tùy chọn)
+                {/* Lấy tọa độ nhanh */}
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+                  <label className="mb-2 flex items-center text-sm font-semibold text-blue-800 dark:text-blue-300">
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Lấy tọa độ nhanh từ link Google Maps
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <input
                       type="text"
                       value={mapLink}
                       onChange={(e) => setMapLink(e.target.value)}
-                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      placeholder="https://www.google.com/maps/..."
+                      className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      placeholder="Dán link Google Maps vào đây..."
                     />
                     <button
                       type="button"
                       onClick={handleExtractFromLink}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30"
                     >
                       Trích xuất
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-blue-600/70 dark:text-blue-400/70">
-                    * Mẹo: Copy link trên thanh địa chỉ máy tính để có độ chính xác cao nhất.
-                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Tên địa điểm *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                      placeholder="VD: Đỉnh Fansipan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Tỉnh/Thành phố *
+                    </label>
+                    <select
+                      name="province_id"
+                      required
+                      value={formData.province_id}
+                      onChange={handleInputChange}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                    >
+                      <option value="">-- Chọn tỉnh thành phố --</option>
+                      {provinces?.map((prov) => (
+                        <option key={prov.id} value={prov.id}>
+                          {prov.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Độ Khó
+                    </label>
+                    <select
+                      name="difficulty_level"
+                      value={formData.difficulty_level}
+                      onChange={handleInputChange}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                    >
+                      <option value="">-- Chọn độ khó --</option>
+                      <option value="Dễ">Dễ (Cho người mới)</option>
+                      <option value="Trung Bình">Trung Bình</option>
+                      <option value="Khó">Khó (Đòi hỏi thể lực)</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <FileText className="mr-2 h-4 w-4 text-gray-400" />
                     Mô tả chi tiết
                   </label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    rows={4}
-                    placeholder="Nhập mô tả về địa điểm này..."
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                    rows={3}
+                    placeholder="Viết vài dòng giới thiệu về vẻ đẹp, đặc điểm của nơi này..."
                   ></textarea>
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Lưu ý
+                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
+                    Lưu ý quan trọng
                   </label>
                   <textarea
-                    name="description"
-                    value={formData.description}
+                    name="note"
+                    value={formData.note}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    rows={4}
-                    placeholder="Một số lưu ý khi đến địa điểm này (giá vé vào cửa, đường đi hiểm trở, phải trekking,...)"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                    rows={2}
+                    placeholder="VD: Đường đất trơn trượt vào mùa mưa, cần mang giày trekking..."
                   ></textarea>
                 </div>
+
+                {/* Upload File UI Mới */}
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tỉnh/Thành phố
-                  </label>
-                  <select
-                    name="province_id"
-                    value={formData.province_id}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                  >
-                    <option value="">-- Chọn tỉnh thành phố --</option>
-                    {provinces?.map((prov) => (
-                      <option key={prov.id} value={prov.id}>
-                        {prov.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Độ Khó
-                  </label>
-                  <select
-                    name="difficulty_level"
-                    value={formData.difficulty_level}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
-                    <option value="">-- Chọn độ khó --</option>
-                    <option>
-                      Dễ
-                    </option>
-                    <option>
-                      Trung Bình
-                    </option>
-                    <option>
-                      Khó
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <ImageIcon className="mr-2 h-4 w-4 text-gray-400" />
                     Hình ảnh đại diện
                   </label>
-                  <div className="flex w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-4 hover:border-brand-500 dark:border-gray-600">
+                  <label className="group flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-brand-500 hover:bg-brand-50/50 dark:border-gray-600 dark:bg-gray-900/50 dark:hover:border-brand-400 dark:hover:bg-gray-800">
+                    <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                      <UploadCloud className="mb-2 h-8 w-8 text-gray-400 group-hover:text-brand-500" />
+                      <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold text-brand-600 dark:text-brand-400">Nhấn để tải lên</span> hoặc kéo thả ảnh
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Hỗ trợ PNG, JPG, WEBP (Tối đa 5MB)
+                      </p>
+                    </div>
                     <input
                       type="file"
+                      className="hidden"
                       accept="image/*"
-                      onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:font-semibold file:text-brand-700 hover:file:bg-brand-100 dark:file:bg-gray-700 dark:file:text-white"
+                      onChange={(e) => {
+                        const file = e.target.files ? e.target.files[0] : null;
+                        setImageFile(file);
+                        // Gợi ý: Bạn có thể thêm Toast ở đây để báo đã chọn file thành công
+                      }}
                     />
-                  </div>
+                  </label>
                 </div>
-              </div>
 
+              </div>
             </div>
           </form>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 border-t bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/50">
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(false)}
-            className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            Hủy bỏ
-          </button>
-          <button
-            type="submit"
-            form="add-location-form"
-            disabled={isSaving}
-            className={`flex items-center justify-center rounded-lg px-5 py-2 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-brand-300 ${isSaving
-              ? "cursor-not-allowed bg-brand-400"
-              : "bg-brand-500 hover:bg-brand-600"
-              }`}
-          >
-            {isSaving ? (
-              <>
-                <svg
-                  className="mr-2 h-4 w-4 animate-spin text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Đang lưu...
-              </>
-            ) : (
-              "Lưu địa điểm"
-            )}
-          </button>
+        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/80 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/80">
+          <p className="hidden text-sm text-gray-500 sm:block flex-1">
+            Các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
+          </p>
+          <div className="flex gap-3 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="submit"
+              form="add-location-form"
+              disabled={isSaving}
+              className={`flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-brand-500/30 ${isSaving
+                  ? "cursor-not-allowed bg-brand-400"
+                  : "bg-brand-600 hover:bg-brand-700 hover:shadow-md"
+                }`}
+            >
+              {isSaving ? (
+                <>
+                  <svg className="mr-2 h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang xử lý...
+                </>
+              ) : (
+                "Lưu địa điểm"
+              )}
+            </button>
+          </div>
         </div>
 
       </div>
