@@ -3,8 +3,9 @@ import React from "react";
 import dynamic from "next/dynamic";
 import {
   X, MapPin, Link as LinkIcon, Image as ImageIcon,
-  UploadCloud, AlertTriangle, FileText, Info, Map
+  UploadCloud, AlertTriangle, FileText, Map
 } from "lucide-react";
+import { AddLocationModalProps } from "@/interface"
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
   ssr: false,
@@ -15,38 +16,6 @@ const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
     </div>
   ),
 });
-
-interface AddLocationModalProps {
-  setIsAddModalOpen: (isOpen: boolean) => void;
-  formData: {
-    name: string;
-    description: string;
-    note: string; // Đã thêm trường note để tách biệt với description
-    lat: string;
-    lng: string;
-    province_id: string;
-    difficulty_level: string;
-  };
-  setFormData: React.Dispatch<
-    React.SetStateAction<{
-      name: string;
-      description: string;
-      note: string;
-      lat: string;
-      lng: string;
-      province_id: string;
-      difficulty_level: string;
-    }>
-  >;
-  mapLink: string;
-  setMapLink: (link: string) => void;
-  setImageFile: (file: File | null) => void;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  handleExtractFromLink: () => void;
-  handleAddSubmit: (e: React.FormEvent) => Promise<void>;
-  provinces: { id: string; name: string }[];
-  isSaving: boolean;
-}
 
 export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   setIsAddModalOpen,
@@ -59,7 +28,8 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   handleExtractFromLink,
   handleAddSubmit,
   provinces,
-  isSaving
+  isSaving,
+  imageFile
 }) => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md sm:p-6 transition-all">
@@ -72,7 +42,7 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
               <MapPin className="h-5 w-5" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Thêm địa điểm phượt mới
+              Thêm địa điểm mới
             </h2>
           </div>
           <button
@@ -245,33 +215,56 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                   ></textarea>
                 </div>
 
-                {/* Upload File UI Mới */}
                 <div>
                   <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                     <ImageIcon className="mr-2 h-4 w-4 text-gray-400" />
-                    Hình ảnh đại diện
+                    Hình ảnh
                   </label>
-                  <label className="group flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-brand-500 hover:bg-brand-50/50 dark:border-gray-600 dark:bg-gray-900/50 dark:hover:border-brand-400 dark:hover:bg-gray-800">
-                    <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                      <UploadCloud className="mb-2 h-8 w-8 text-gray-400 group-hover:text-brand-500" />
-                      <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="font-semibold text-brand-600 dark:text-brand-400">Nhấn để tải lên</span> hoặc kéo thả ảnh
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Hỗ trợ PNG, JPG, WEBP (Tối đa 5MB)
-                      </p>
+                  {imageFile ? (
+                    /* --- Giao diện khi ĐÃ chọn ảnh (Xem trước) --- */
+                    <div className="relative h-32 w-30 rounded-xl border-2 border-gray-300 overflow-hidden dark:border-gray-600">
+                      {/*eslint-disable-next-line @next/next/no-img-element*/}
+                      <img
+                        src={URL.createObjectURL(imageFile)}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                      {/* Nút xóa ảnh */}
+                      <button
+                        type="button"
+                        onClick={() => setImageFile(null)}
+                        className="absolute right-2 top-2 rounded-full bg-gray-900/60 p-1.5 text-white backdrop-blur-sm transition-all hover:bg-red-500"
+                        title="Xóa ảnh"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                     </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files ? e.target.files[0] : null;
-                        setImageFile(file);
-                        // Gợi ý: Bạn có thể thêm Toast ở đây để báo đã chọn file thành công
-                      }}
-                    />
-                  </label>
+                  ) : (
+                    /* --- Giao diện khi CHƯA chọn ảnh (Khung Upload của bạn) --- */
+                    <label className="group flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-brand-500 hover:bg-brand-50/50 dark:border-gray-600 dark:bg-gray-900/50 dark:hover:border-brand-400 dark:hover:bg-gray-800">
+                      <div className="flex flex-col items-center justify-center pb-6 pt-5">
+                        <UploadCloud className="mb-2 h-8 w-8 text-gray-400 group-hover:text-brand-500" />
+                        <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="font-semibold text-brand-600 dark:text-brand-400">Nhấn để tải lên</span> hoặc kéo thả ảnh
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Hỗ trợ PNG, JPG, WEBP (Tối đa 5MB)
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files ? e.target.files[0] : null;
+                          setImageFile(file);
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
 
               </div>
@@ -297,8 +290,8 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
               form="add-location-form"
               disabled={isSaving}
               className={`flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-brand-500/30 ${isSaving
-                  ? "cursor-not-allowed bg-brand-400"
-                  : "bg-brand-600 hover:bg-brand-700 hover:shadow-md"
+                ? "cursor-not-allowed bg-brand-400"
+                : "bg-brand-600 hover:bg-brand-700 hover:shadow-md"
                 }`}
             >
               {isSaving ? (

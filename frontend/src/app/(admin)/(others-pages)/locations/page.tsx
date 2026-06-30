@@ -4,27 +4,10 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
 import { AddLocationModal } from "@/components/modals/addLocation";
 import toast, { Toaster } from "react-hot-toast";
-import { Edit, Trash2, Eye, Plus, MapPin } from "lucide-react";
+import { Plus, MapPin } from "lucide-react";
+import { LocationTable } from "@/components/tables/locationsTable";
+import { Location } from "@/interface"
 
-// --- IMPORT CỦA ANTD ---
-import { Popconfirm } from "antd";
-
-interface Location {
-  id: string;
-  name: string;
-  description?: string;
-  note?: string;
-  province_id?: string;
-  provinces?: {
-    name: string;
-  };
-  lat: number;
-  lng: number;
-  img: string | null;
-  difficulty_level?: string;
-  rating?: number;
-  created_at?: string;
-}
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -49,6 +32,11 @@ export default function LocationsPage() {
     if (!mapLink) {
       toast.error("Vui lòng nhập link Google Maps!");
       return;
+    }
+    const place = mapLink.match(/\/place\/([^\/]+)/);
+    if (place && place[1]) {
+      const decodedName = decodeURIComponent(place[1]).replace(/\+/g, ' ');
+      setFormData((prev) => ({ ...prev, name: decodedName }))
     }
     const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
     const match = mapLink.match(regex);
@@ -146,7 +134,7 @@ export default function LocationsPage() {
       supabase.removeChannel(locationChannel);
       supabase.removeChannel(provinceChannel);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,67 +241,10 @@ export default function LocationsPage() {
                   </td>
                 </tr>
               ) : (
-                locations.map((loc) => (
-                  <tr
-                    key={loc.id}
-                    className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800/50"
-                  >
-                    <td className="px-6 py-3">
-                      {loc.img ? (
-                        <img src={loc.img} alt={loc.name} className="h-12 w-12 rounded-lg object-cover shadow-sm" />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400 dark:bg-gray-800">
-                          Trống
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                      {loc.name}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                        {loc.provinces?.name || "Chưa cập nhật"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          title="Xem chi tiết"
-                          className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          title="Chỉnh sửa"
-                          className="rounded-lg p-2 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <Popconfirm
-                          title="Xác nhận xóa địa điểm"
-                          description={
-                            <div className="max-w-[250px]">
-                              Bạn có chắc chắn muốn xóa <strong>&quot;{loc.name}&quot;</strong>? Hành động này không thể hoàn tác.
-                            </div>
-                          }
-                          onConfirm={() => executeDelete(loc.id, loc.name)}
-                          okText="Xóa"
-                          cancelText="Hủy"
-                          okButtonProps={{ danger: true }}
-                          placement="topRight"
-                        >
-                          <button
-                            title="Xóa địa điểm"
-                            className="rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </Popconfirm>
-
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                <LocationTable
+                  locations={locations}
+                  executeDelete={executeDelete}
+                />
               )}
             </tbody>
           </table>
@@ -333,6 +264,7 @@ export default function LocationsPage() {
           handleAddSubmit={handleAddSubmit}
           provinces={provinces}
           isSaving={isSaving}
+          imageFile={imageFile}
         />
       )}
 
