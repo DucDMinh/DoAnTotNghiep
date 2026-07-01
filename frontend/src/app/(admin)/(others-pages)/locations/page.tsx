@@ -16,6 +16,10 @@ export default function LocationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mapLink, setMapLink] = useState("");
   const [pickLocation, setPickLocation] = useState<Location>();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterProvince, setFilterProvince] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -71,6 +75,70 @@ export default function LocationsPage() {
         toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
         return;
       }
+      if (match) {
+        const lat = match[1];
+        const lng = match[2];
+        let matchedProvinceId = "";
+
+        // --- BƯỚC 1: ƯU TIÊN TÌM TRONG TÊN (extractedName) TRƯỚC ---
+        if (extractedName) {
+          // Cắt chuỗi theo dấu phẩy và lấy cụm cuối cùng (Xóa khoảng trắng ở 2 đầu)
+          const nameParts = extractedName.split(',');
+          const lastPart = nameParts[nameParts.length - 1].trim();
+          const normalizedLastPart = removeAccents(lastPart);
+
+          const foundInName = provinces.find((p) => {
+            // Dọn dẹp tên trong DB
+            const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
+            const normalizedDbName = removeAccents(dbNameClean);
+
+            // CHỈ so sánh tên DB với cụm cuối cùng của Google Maps
+            return normalizedLastPart.includes(normalizedDbName) || normalizedDbName.includes(normalizedLastPart);
+          });
+
+          if (foundInName) {
+            matchedProvinceId = foundInName.id;
+          }
+        }
+
+        // --- BƯỚC 2: NẾU BƯỚC 1 TRƯỢT, MỚI GỌI API BACKEND DỰA VÀO TỌA ĐỘ ---
+        if (!matchedProvinceId) {
+          try {
+            const provRes = await fetch(`http://localhost:8000/get-province-from-coords?lat=${lat}&lng=${lng}`);
+            const provData = await provRes.json();
+
+            if (provData.provinceName) {
+              const rawName = provData.provinceName;
+              const normalizedRaw = removeAccents(rawName);
+
+              const foundInCoords = provinces.find(p => {
+                const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
+                const normalizedDb = removeAccents(dbNameClean);
+                return normalizedRaw.includes(normalizedDb) || normalizedDb.includes(normalizedRaw);
+              });
+
+              if (foundInCoords) {
+                matchedProvinceId = foundInCoords.id;
+              }
+            }
+          } catch (e) {
+            console.error("Lỗi khi tra cứu tọa độ lấy tỉnh:", e);
+            // Lỗi API thì vẫn tiếp tục, không làm gián đoạn
+          }
+        }
+
+        // --- BƯỚC 3: CẬP NHẬT TẤT CẢ VÀO STATE ---
+        setFormData((prev) => ({
+          ...prev,
+          lat,
+          lng,
+          ...(matchedProvinceId ? { province_id: matchedProvinceId } : {})
+        }));
+
+      } else {
+        toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
+        return;
+      }
       if (result.base64) {
         const file = base64ToFile(result.base64, result.fileName, result.mimeType);
         setImageFile(file);
@@ -90,6 +158,14 @@ export default function LocationsPage() {
         toast.error("Không thể trích xuất dữ liệu từ link này.", { id: toastId });
       }
     }
+  };
+  const removeAccents = (str: string) => {
+    return str
+      .normalize("NFD") // Tách các dấu khỏi ký tự
+      .replace(/[\u0300-\u036f]/g, "") // Xóa các ký tự dấu
+      .toLowerCase() // Chuyển về chữ thường để so sánh không phân biệt hoa/thường
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
   };
   const executeDelete = async (id: string, name: string) => {
     const toastId = toast.loading(`Đang xóa "${name}"...`);
@@ -113,7 +189,9 @@ export default function LocationsPage() {
   const fetchProvinces = async () => {
     const cachedData = sessionStorage.getItem("provinces_cache");
     if (cachedData) {
-      setProvinces(JSON.parse(cachedData));
+      setTimeout(() => {
+        setProvinces(JSON.parse(cachedData));
+      }, 0);
       return;
     }
     try {
@@ -133,23 +211,24 @@ export default function LocationsPage() {
   };
 
   const fetchLocations = async () => {
-    const cachedData = sessionStorage.getItem("locations_cache");
-    if (cachedData) {
-      setLocations(JSON.parse(cachedData));
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/locations");
-      const result = await response.json();
-      let finalData = [];
-      if (Array.isArray(result)) finalData = result;
-      else if (result.data && Array.isArray(result.data)) finalData = result.data;
-      else if (result.data?.data && Array.isArray(result.data.data)) finalData = result.data.data;
-      else if (result.success && result.data) finalData = [result.data];
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "5",
+        ...(searchQuery && { search: searchQuery }),
+        ...(filterProvince && { province_id: filterProvince })
+      });
 
-      setLocations(finalData);
-      sessionStorage.setItem("locations_cache", JSON.stringify(finalData));
+      const response = await fetch(`http://localhost:8000/locations?${params}`);
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setLocations(result.data);
+        setTotalPages(result.totalPages || 1);
+      } else if (Array.isArray(result)) {
+        setLocations(result);
+      }
     } catch (error) {
       console.error("Lỗi kết nối:", error);
       toast.error("Không thể tải danh sách địa điểm!");
@@ -157,10 +236,10 @@ export default function LocationsPage() {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
-    fetchLocations();
-    fetchProvinces();
+    const initTimer = setTimeout(() => {
+      fetchProvinces();
+    }, 0);
     const locationChannel = supabase.channel("custom-location-channel")
       .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, () => {
         sessionStorage.removeItem("locations_cache");
@@ -174,10 +253,29 @@ export default function LocationsPage() {
       }).subscribe();
 
     return () => {
+      clearTimeout(initTimer);
       supabase.removeChannel(locationChannel);
       supabase.removeChannel(provinceChannel);
     };
   }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchLocations();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, filterProvince, searchQuery]);
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterProvince(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   const base64ToFile = (base64String: string, fileName: string, mimeType: string): File => {
     const arr = base64String.split(',');
@@ -236,7 +334,6 @@ export default function LocationsPage() {
       toast.error("Không tìm thấy dữ liệu địa điểm cần sửa!");
       return;
     }
-
     setIsSaving(true);
     const toastId = toast.loading("Đang cập nhật địa điểm...");
 
@@ -317,6 +414,31 @@ export default function LocationsPage() {
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              {/* Ô tìm kiếm */}
+              <input
+                type="text"
+                placeholder="Tìm tên địa điểm..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:w-64 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              />
+              {/* Lọc theo tỉnh */}
+              <select
+                value={filterProvince}
+                onChange={handleFilterChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:w-48 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="">Tất cả tỉnh thành</option>
+                {provinces?.map((prov) => (
+                  <option key={prov.id} value={prov.id}>
+                    {prov.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
             <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
               <tr>
@@ -327,6 +449,7 @@ export default function LocationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+
               {isLoading ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
@@ -357,6 +480,29 @@ export default function LocationsPage() {
               )}
             </tbody>
           </table>
+          {!isLoading && totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900 rounded-b-xl">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Trang {currentPage} trên {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  Trước
+                </button>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

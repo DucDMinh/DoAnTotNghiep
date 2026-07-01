@@ -79,6 +79,28 @@ class LocationController extends BaseController {
             ctx.body = { success: false, message: `Lỗi hệ thống khi xóa ${this.itemName}`, error_detail: error.message };
         }
     }
+    getAll = async (ctx) => {
+        try {
+            const page = parseInt(ctx.query.page) || 1;
+            const limit = parseInt(ctx.query.limit) || 5;
+            const search = ctx.query.search || '';
+            const province_id = ctx.query.province_id || '';
+            const { data, count, error } = await this.repository.getAll(page, limit, search, province_id);
+            if (error) throw error;
+
+            ctx.status = 200;
+            ctx.body = {
+                success: true,
+                data: data,
+                total: count,
+                totalPages: Math.ceil(count / limit),
+                currentPage: page
+            };
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống khi lấy danh sách ${this.itemName}`, error_detail: error.message };
+        }
+    }
 }
 
 const locationController = new LocationController();

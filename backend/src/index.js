@@ -20,6 +20,43 @@ app.use(cors({
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(bodyParser());
+router.get('/get-province-from-coords', async (ctx) => {
+    const lat = parseFloat(ctx.query.lat);
+    const lng = parseFloat(ctx.query.lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+        ctx.status = 400;
+        ctx.body = { error: 'Tọa độ không hợp lệ' };
+        return;
+    }
+
+    try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
+            params: {
+                lat: lat,
+                lon: lng,
+                format: 'jsonv2',
+                addressdetails: 1,
+                'accept-language': 'vi'
+            },
+            headers: {
+                'User-Agent': 'MyMapApp/1.0 (lienhe@emailcuaban.com)',
+                'Referer': 'http://localhost:3000/'
+            }
+        });
+
+        const address = response.data.address || {};
+        console.log("📍 Địa chỉ nhận được:", address);
+
+        const provinceName = address.province || address.state || address.city || address.yes || '';
+
+        ctx.body = { provinceName };
+    } catch (error) {
+        console.error("❌ Lỗi gọi Nominatim:", error.response?.data || error.message);
+        ctx.status = 500;
+        ctx.body = { error: 'Không thể truy vấn địa chỉ' };
+    }
+});
 router.get('/extract-map', async (ctx) => {
     try {
         const { url } = ctx.query;
