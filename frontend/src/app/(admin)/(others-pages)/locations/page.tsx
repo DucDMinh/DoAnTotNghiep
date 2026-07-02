@@ -47,7 +47,7 @@ export default function LocationsPage() {
       cleanLink = "https://" + cleanLink.split("https://")[1];
     }
 
-    const toastId = toast.loading("Đang trích xuất tọa độ và hình ảnh...");
+    const toastId = toast.loading("Đang trích xuất dữ liệu bản đồ...");
 
     try {
       const response = await fetch(`http://localhost:8000/extract-map?url=${encodeURIComponent(cleanLink)}`);
@@ -55,8 +55,28 @@ export default function LocationsPage() {
 
       const result = await response.json();
       const finalUrl = result.expandedUrl || mapLink;
-      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = finalUrl.match(regex);
+      let lat = "";
+      let lng = "";
+
+      const exactPinRegex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
+      const exactMatch = finalUrl.match(exactPinRegex);
+
+      if (exactMatch) {
+        lat = exactMatch[1];
+        lng = exactMatch[2];
+      } else {
+        const viewportRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+        const viewportMatch = finalUrl.match(viewportRegex);
+        if (viewportMatch) {
+          lat = viewportMatch[1];
+          lng = viewportMatch[2];
+        }
+      }
+
+      if (!lat || !lng) {
+        toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
+        return;
+      }
       let extractedName = result.name || "";
       if (!extractedName && finalUrl.includes('/place/')) {
         const nameMatch = finalUrl.match(/\/place\/([^/]+)/);
@@ -64,96 +84,83 @@ export default function LocationsPage() {
           extractedName = decodeURIComponent(nameMatch[1].replace(/\+/g, ' '));
         }
       }
-      if (match) {
-        setFormData((prev) => ({
-          ...prev,
-          lat: match[1],
-          lng: match[2],
-          ...(extractedName ? { name: extractedName } : {})
-        }));
-      } else {
-        toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
-        return;
-      }
-      if (match) {
-        const lat = match[1];
-        const lng = match[2];
-        let matchedProvinceId = "";
+      let matchedProvinceId = "";
+      if (extractedName) {
+        const nameParts = extractedName.split(',');
+        const lastPart = nameParts[nameParts.length - 1].trim();
+        const normalizedLastPart = removeAccents(lastPart);
 
-        // --- BƯỚC 1: ƯU TIÊN TÌM TRONG TÊN (extractedName) TRƯỚC ---
-        if (extractedName) {
-          // Cắt chuỗi theo dấu phẩy và lấy cụm cuối cùng (Xóa khoảng trắng ở 2 đầu)
-          const nameParts = extractedName.split(',');
-          const lastPart = nameParts[nameParts.length - 1].trim();
-          const normalizedLastPart = removeAccents(lastPart);
+        const foundInName = provinces.find((p) => {
+          const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
+          const normalizedDbName = removeAccents(dbNameClean);
+          return normalizedLastPart.includes(normalizedDbName) || normalizedDbName.includes(normalizedLastPart);
+        });
 
-          const foundInName = provinces.find((p) => {
-            // Dọn dẹp tên trong DB
-            const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
-            const normalizedDbName = removeAccents(dbNameClean);
-
-            // CHỈ so sánh tên DB với cụm cuối cùng của Google Maps
-            return normalizedLastPart.includes(normalizedDbName) || normalizedDbName.includes(normalizedLastPart);
-          });
-
-          if (foundInName) {
-            matchedProvinceId = foundInName.id;
-          }
+        if (foundInName) {
+          matchedProvinceId = foundInName.id;
         }
+      }
+      if (!matchedProvinceId) {
+        try {
+          const provRes = await fetch(`http://localhost:8000/get-province-from-coords?lat=${lat}&lng=${lng}`);
+          const provData = await provRes.json();
 
-        // --- BƯỚC 2: NẾU BƯỚC 1 TRƯỢT, MỚI GỌI API BACKEND DỰA VÀO TỌA ĐỘ ---
-        if (!matchedProvinceId) {
-          try {
-            const provRes = await fetch(`http://localhost:8000/get-province-from-coords?lat=${lat}&lng=${lng}`);
-            const provData = await provRes.json();
+          if (provData.provinceName) {
+            const rawName = provData.provinceName;
+            const normalizedRaw = removeAccents(rawName);
 
-            if (provData.provinceName) {
-              const rawName = provData.provinceName;
-              const normalizedRaw = removeAccents(rawName);
+            const foundInCoords = provinces.find((p) => {
+              const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
+              const normalizedDb = removeAccents(dbNameClean);
+              return normalizedRaw.includes(normalizedDb) || normalizedDb.includes(normalizedRaw);
+            });
 
-              const foundInCoords = provinces.find(p => {
-                const dbNameClean = p.name.replace(/Tỉnh |Thành phố |TP\. /gi, '').trim();
-                const normalizedDb = removeAccents(dbNameClean);
-                return normalizedRaw.includes(normalizedDb) || normalizedDb.includes(normalizedRaw);
-              });
-
-              if (foundInCoords) {
-                matchedProvinceId = foundInCoords.id;
-              }
+            if (foundInCoords) {
+              matchedProvinceId = foundInCoords.id;
             }
-          } catch (e) {
-            console.error("Lỗi khi tra cứu tọa độ lấy tỉnh:", e);
-            // Lỗi API thì vẫn tiếp tục, không làm gián đoạn
           }
+        } catch (e) {
+          console.error("Lỗi khi tra cứu tọa độ lấy tỉnh:", e);
         }
-
-        // --- BƯỚC 3: CẬP NHẬT TẤT CẢ VÀO STATE ---
-        setFormData((prev) => ({
-          ...prev,
-          lat,
-          lng,
-          ...(matchedProvinceId ? { province_id: matchedProvinceId } : {})
-        }));
-
-      } else {
-        toast.error("Không tìm thấy tọa độ trong link này.", { id: toastId });
-        return;
       }
+      setFormData((prev) => ({
+        ...prev,
+        lat,
+        lng,
+        ...(extractedName ? { name: extractedName } : {}),
+        ...(matchedProvinceId ? { province_id: matchedProvinceId } : {})
+      }));
       if (result.base64) {
         const file = base64ToFile(result.base64, result.fileName, result.mimeType);
         setImageFile(file);
-        toast.success("Trích xuất tọa độ và ảnh thành công!", { id: toastId });
+        toast.success("Trích xuất dữ liệu hoàn tất!", { id: toastId });
       } else {
-        toast.success("Lấy tọa độ thành công (Không có ảnh xem trước)!", { id: toastId });
+        toast.success("Đã lấy dữ liệu (Không có ảnh xem trước)!", { id: toastId });
       }
 
     } catch (error) {
-      console.error(error);
-      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = mapLink.match(regex);
+      console.error("Lỗi trích xuất API:", error);
+
+      let lat = "";
+      let lng = "";
+      const exactPinRegex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
+      let match = mapLink.match(exactPinRegex);
+
       if (match) {
-        setFormData((prev) => ({ ...prev, lat: match[1], lng: match[2] }));
-        toast.success("Đã lấy được tọa độ (Chưa lấy được ảnh)!", { id: toastId });
+        lat = match[1];
+        lng = match[2];
+      } else {
+        const viewportRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+        match = mapLink.match(viewportRegex);
+        if (match) {
+          lat = match[1];
+          lng = match[2];
+        }
+      }
+
+      if (lat && lng) {
+        setFormData((prev) => ({ ...prev, lat, lng }));
+        toast.success("Đã lấy được tọa độ dự phòng (Mạng lỗi)!", { id: toastId });
       } else {
         toast.error("Không thể trích xuất dữ liệu từ link này.", { id: toastId });
       }
@@ -215,7 +222,7 @@ export default function LocationsPage() {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: "5",
+        limit: "10",
         ...(searchQuery && { search: searchQuery }),
         ...(filterProvince && { province_id: filterProvince })
       });
