@@ -10,10 +10,10 @@ class ProvinceController extends BaseController {
         try {
             const payload = { ...ctx.request.body };
             const file = ctx.request.file;
-            console.log("Received file:", file); // Debugging line to check the received file
+            console.log("Received file:", file);
             if (file) {
-                const imageUrl = await uploadImageToStorage(file, 'provinces'); // Specify the folder name in Supabase Storage
-                payload.img = imageUrl;
+                const imageUrl = await uploadImageToStorage(file, 'provinces');
+                payload.image_url = imageUrl;
             }
             const data = await this.repository.create(payload);
 

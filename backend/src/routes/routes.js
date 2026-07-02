@@ -12,8 +12,8 @@ router.delete('/locations/:id', locationController.deleteLocation);
 router.put('/locations/:id', upload.single('image'), locationController.updateLocation);
 
 router.get('/provinces', provinceController.getAllProvinces);
-router.post('/provinces', upload.none(), provinceController.createProvince);
+router.post('/provinces', upload.single('image'), provinceController.createProvince);
 router.delete('/provinces/:id', provinceController.deleteProvince);
-router.put('/provinces/:id', upload.none(), provinceController.updateProvince);
+router.put('/provinces/:id', upload.single('image'), provinceController.updateProvince);
 
 export default router;

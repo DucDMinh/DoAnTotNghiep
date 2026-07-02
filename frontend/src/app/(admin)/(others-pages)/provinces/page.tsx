@@ -6,30 +6,18 @@ import toast, { Toaster } from "react-hot-toast";
 import { Plus, MapPin } from "lucide-react";
 import { Province } from "@/interface";
 import { ProvinceTable } from "@/components/tables/provinceTable";
-
+import { AddProvinceModal } from "@/components/modals/AddProvinceModal";
+import { EditProvinceModal } from "@/components/modals/EditProvinceModal";
 
 export default function ProvincesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [pickProvince, setPickProvince] = useState<Province | undefined>(undefined);
     const [searchQuery, setSearchQuery] = useState("");
-    const [filterProvince, setFilterProvince] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [imageFile, setImageFile] = useState<File | null>(null);
     const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        description: "",
-        best_time_to_visit: "",
-        height: "",
-        locations: "",
-        image_url: "",
-    });
-
-
     const executeDelete = async (id: string, name: string) => {
         const toastId = toast.loading(`Đang xóa "${name}"...`);
 
@@ -94,18 +82,9 @@ export default function ProvincesPage() {
         setCurrentPage(1);
     };
 
-    const handleAddSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAddSubmit = async (submitData: FormData) => {
         setIsSaving(true);
-        const toastId = toast.loading("Đang lưu địa điểm lên hệ thống...");
-
-        const submitData = new FormData();
-        submitData.append("name", formData.name);
-        if (formData.description) submitData.append("description", formData.description);
-        if (formData.best_time_to_visit) submitData.append("best_time_to_visit", formData.best_time_to_visit);
-        if (formData.height) submitData.append("height", formData.height);
-        if (formData.locations) submitData.append("locations", formData.locations);
-        if (imageFile) submitData.append("image", imageFile);
+        const toastId = toast.loading("Đang lưu tỉnh thành lên hệ thống...");
 
         try {
             const response = await fetch("http://localhost:8000/provinces", {
@@ -115,13 +94,13 @@ export default function ProvincesPage() {
 
             if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
 
-            toast.success("Thêm địa điểm thành công!", { id: toastId });
+            toast.success("Thêm tỉnh/thành phố thành công!", { id: toastId });
 
+            // Tắt modal
             setIsAddModalOpen(false);
-            setFormData({ name: "", description: "", best_time_to_visit: "", height: "", locations: "", image_url: "" });
-            setImageFile(null);
 
-            sessionStorage.removeItem("locations_cache");
+            // Xóa cache TỈNH THÀNH (chứ không phải locations_cache) và tải lại
+            sessionStorage.removeItem("provinces_cache");
             fetchProvinces();
         } catch (error) {
             console.error("Lỗi:", error);
@@ -131,75 +110,46 @@ export default function ProvincesPage() {
         }
     };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!pickProvince) {
-            toast.error("Không tìm thấy dữ liệu địa điểm cần sửa!");
-            return;
-        }
-        setIsSaving(true);
-        const toastId = toast.loading("Đang cập nhật địa điểm...");
+    const handleEditSubmit = async (submitData: FormData) => {
+        if (!pickProvince) return;
 
-        const submitData = new FormData();
-        submitData.append("name", formData.name);
-        if (formData.description) submitData.append("description", formData.description);
-        if (formData.best_time_to_visit) submitData.append("best_time_to_visit", formData.best_time_to_visit);
-        if (formData.height) submitData.append("height", formData.height);
-        if (formData.locations) submitData.append("locations", formData.locations);
-        if (imageFile) {
-            submitData.append("image", imageFile);
-        }
-        // MẸO: Nếu API của bạn cần cờ báo xóa ảnh cũ (khi người dùng bấm X xóa ảnh mà không tải ảnh mới)
-        // else if (!oldImageUrl && pickProvince.img) {
-        //     submitData.append("delete_old_image", "true"); 
-        // }
+        setIsSaving(true);
+        const toastId = toast.loading("Đang cập nhật tỉnh/thành phố...");
 
         try {
-            const response = await fetch(`http://localhost:8000/locations/${pickProvince.id}`, {
+            // Nhớ kiểm tra lại API URL này, trong code cũ của bạn đang là /locations/ 
+            // Đáng lý ra phải là /provinces/ đúng không? Tôi sửa thành /provinces/ nhé:
+            const response = await fetch(`http://localhost:8000/provinces/${pickProvince.id}`, {
                 method: "PUT",
                 body: submitData,
             });
 
-            if (!response.ok) throw new Error("Lỗi khi cập nhật địa điểm");
+            if (!response.ok) throw new Error("Lỗi khi cập nhật");
 
-            toast.success("Cập nhật địa điểm thành công!", { id: toastId });
+            toast.success("Cập nhật thành công!", { id: toastId });
 
             setIsEditModalOpen(false);
             setPickProvince(undefined);
-            setFormData({ name: "", description: "", best_time_to_visit: "", height: "", locations: "", image_url: "" });
-            setImageFile(null);
             sessionStorage.removeItem("provinces_cache");
             fetchProvinces();
-
         } catch (error) {
             console.error("Lỗi:", error);
-            toast.error("Cập nhật thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+            toast.error("Cập nhật thất bại!", { id: toastId });
         } finally {
             setIsSaving(false);
         }
     };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
     const handleOpenModal = async () => {
         setIsAddModalOpen(true);
     };
 
     const ITEMS_PER_PAGE = 10;
-
-    // 1. Tìm kiếm nội bộ
     const filteredProvinces = provinces.filter((province) => {
         if (!searchQuery) return true;
         return province.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-
-    // 2. Tính tổng số trang nội bộ
     const calculatedTotalPages = Math.ceil(filteredProvinces.length / ITEMS_PER_PAGE) || 1;
 
-    // 3. Cắt 10 tỉnh ra để hiển thị cho trang hiện tại
     const paginatedProvinces = filteredProvinces.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
@@ -278,7 +228,6 @@ export default function ProvincesPage() {
                                     executeDelete={executeDelete}
                                     setIsEditModalOpen={setIsEditModalOpen}
                                     setPickProvince={setPickProvince}
-                                    setFormData={setFormData}
                                 />
                             )}
                         </tbody>
@@ -312,11 +261,27 @@ export default function ProvincesPage() {
                 </div>
             </div>
 
-            {isAddModalOpen && (<div></div>
+            {isAddModalOpen && (
+                <AddProvinceModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    onAdd={handleAddSubmit}
+                    isSaving={isSaving}
+                />
             )}
 
             {isEditModalOpen && (
-                <div></div>
+                <EditProvinceModal
+                    key={pickProvince?.id || 'empty-edit-modal'}
+                    isOpen={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setPickProvince(undefined);
+                    }}
+                    onEdit={handleEditSubmit}
+                    isSaving={isSaving}
+                    province={pickProvince}
+                />
             )}
 
         </div>

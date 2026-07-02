@@ -6,16 +6,6 @@ interface ProvinceTableProps {
     executeDelete: (id: string, name: string) => Promise<void>,
     setIsEditModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setPickProvince: React.Dispatch<React.SetStateAction<Province | undefined>>;
-    setFormData: React.Dispatch<
-        React.SetStateAction<{
-            name: string;
-            description: string;
-            best_time_to_visit: string;
-            height: string;
-            locations: string;
-            image_url: string;
-        }>
-    >;
 }
 
 export const ProvinceTable: React.FC<ProvinceTableProps> = ({
@@ -23,7 +13,6 @@ export const ProvinceTable: React.FC<ProvinceTableProps> = ({
     executeDelete,
     setIsEditModalOpen,
     setPickProvince,
-    setFormData
 }) => {
     return (
         provinces.map((loc) => (
@@ -55,14 +44,6 @@ export const ProvinceTable: React.FC<ProvinceTableProps> = ({
                             title="Chỉnh sửa"
                             onClick={() => {
                                 setPickProvince(loc);
-                                setFormData({
-                                    name: loc.name || "",
-                                    description: loc.description || "",
-                                    best_time_to_visit: loc.best_time_to_visit || "",
-                                    height: loc.height || "",
-                                    locations: loc.locations || "",
-                                    image_url: loc.image_url || "",
-                                });
                                 setIsEditModalOpen(true);
                             }}
                             className="rounded-lg p-2 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"

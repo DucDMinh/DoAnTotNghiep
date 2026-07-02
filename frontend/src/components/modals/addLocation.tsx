@@ -3,16 +3,16 @@ import React from "react";
 import dynamic from "next/dynamic";
 import {
   X, MapPin, Link as LinkIcon, Image as ImageIcon,
-  UploadCloud, AlertTriangle, FileText, Map
+  UploadCloud, AlertTriangle, FileText, Map, Compass, Sparkles
 } from "lucide-react";
 import { AddLocationModalProps } from "@/interface"
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[400px] w-full items-center justify-center rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 text-sm text-gray-500 animate-pulse">
-      <Map className="mr-2 h-5 w-5 text-gray-400" />
-      Đang tải bản đồ...
+    <div className="flex h-full w-full flex-col items-center justify-center bg-gray-900 text-sm text-gray-400">
+      <Compass className="h-8 w-8 animate-spin text-brand-400 mb-3" />
+      <span className="font-medium tracking-wider text-xs uppercase text-gray-400">Đang khởi tạo không gian...</span>
     </div>
   ),
 });
@@ -31,227 +31,169 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
   isSaving,
   imageFile
 }) => {
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md sm:p-6 transition-all">
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 dark:border dark:border-gray-700">
+  // Với form Add, chúng ta chỉ cần hiển thị ảnh vừa upload (nếu có)
+  const displayImage = imageFile ? URL.createObjectURL(imageFile) : null;
 
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-5 dark:border-gray-700 dark:bg-gray-800/50">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-              <MapPin className="h-5 w-5" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Thêm địa điểm mới
-            </h2>
-          </div>
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/70 p-0 backdrop-blur-lg transition-all sm:p-4">
+      <div className="flex h-full w-full max-w-6xl overflow-hidden bg-white shadow-2xl dark:bg-gray-900 sm:h-[90vh] sm:rounded-3xl border border-gray-100 dark:border-gray-800">
+
+        <div className="grid h-full w-full grid-cols-1 lg:grid-cols-12 relative">
+
+          {/* NÚT ĐÓNG MODAL - ĐẶT NỔI Ở GÓC TUYỆT ĐỐI */}
           <button
             onClick={() => setIsAddModalOpen(false)}
-            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            className="absolute right-4 top-4 z-50 rounded-full bg-white/80 p-2.5 text-gray-500 shadow-lg backdrop-blur-md transition-all hover:bg-red-500 hover:text-white dark:bg-gray-800/80 dark:text-gray-400 dark:hover:bg-red-500"
           >
             <X className="h-5 w-5" />
           </button>
-        </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto p-6 custom-scrollbar">
-          <form id="add-location-form" onSubmit={handleAddSubmit}>
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          {/* ================= CỘT TRÁI: BẢN ĐỒ TRÀN VIỀN (Chiếm 5 phần) ================= */}
+          <div className="relative hidden h-full flex-col lg:col-span-5 lg:flex border-r border-gray-100 dark:border-gray-800">
+            {/* Map Canvas */}
+            <div className="relative z-0 h-full w-full overflow-hidden">
+              <MapPicker
+                lat={formData.lat}
+                lng={formData.lng}
+                onLocationSelect={(lat, lng) => {
+                  setFormData((prev) => ({ ...prev, lat, lng }));
+                }}
+              />
+            </div>
 
-              {/* CỘT TRÁI: BẢN ĐỒ (Chiếm 5 phần) */}
-              <div className="flex flex-col space-y-5 lg:col-span-5">
-                <div>
-                  <label className="mb-2 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    <Map className="mr-2 h-4 w-4 text-brand-500" />
-                    Chọn vị trí trên bản đồ *
-                  </label>
-                  <div className="relative z-0 h-[400px] w-full overflow-hidden rounded-xl border border-gray-200 shadow-sm transition-all hover:border-brand-400 dark:border-gray-600">
-                    <MapPicker
-                      lat={formData.lat}
-                      lng={formData.lng}
-                      onLocationSelect={(lat, lng) => {
-                        setFormData((prev) => ({ ...prev, lat, lng }));
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <label className="mb-1 block text-xs font-medium text-gray-500">Vĩ độ (Lat)</label>
-                    <input
-                      type="text"
-                      name="lat"
-                      onChange={handleInputChange}
-                      required
-                      value={formData.lat}
-                      placeholder="VD: 21.0285"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900/50 dark:text-gray-300"
-                    />
-                  </div>
-                  <div className="relative">
-                    <label className="mb-1 block text-xs font-medium text-gray-500">Kinh độ (Lng)</label>
-                    <input
-                      type="text"
-                      name="lng"
-                      onChange={handleInputChange}
-                      required
-                      value={formData.lng}
-                      placeholder="VD: 105.8542"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900/50 dark:text-gray-300"
-                    />
-                  </div>
-                </div>
+            {/* Floating HUD: Tiêu đề nổi */}
+            <div className="absolute left-4 top-4 z-10 flex items-center gap-2.5 rounded-2xl bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md dark:bg-gray-900/90 border border-white/20">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500 text-white shadow-md shadow-brand-500/20">
+                <Compass className="h-4 w-4 animate-pulse" />
               </div>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Không gian</h3>
+                <p className="text-sm font-bold text-gray-800 dark:text-white">Định vị địa lý</p>
+              </div>
+            </div>
 
-              {/* CỘT PHẢI: FORM NHẬP (Chiếm 7 phần) */}
-              <div className="flex flex-col space-y-5 lg:col-span-7">
+            {/* Floating HUD: Thẻ hiển thị tọa độ góc dưới */}
+            <div className="absolute bottom-4 left-4 right-4 z-10 grid grid-cols-2 gap-3 rounded-2xl bg-gray-950/80 p-3.5 shadow-xl backdrop-blur-md border border-white/10">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Vĩ độ (Latitude)</label>
+                <input
+                  type="text"
+                  name="lat"
+                  onChange={handleInputChange}
+                  required
+                  value={formData.lat}
+                  placeholder="21.0285"
+                  className="w-full bg-transparent text-sm font-semibold text-white focus:outline-none placeholder:text-gray-600"
+                />
+              </div>
+              <div className="border-l border-white/10 pl-3">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Kinh độ (Longitude)</label>
+                <input
+                  type="text"
+                  name="lng"
+                  onChange={handleInputChange}
+                  required
+                  value={formData.lng}
+                  placeholder="105.8542"
+                  className="w-full bg-transparent text-sm font-semibold text-white focus:outline-none placeholder:text-gray-600"
+                />
+              </div>
+            </div>
+          </div>
 
-                {/* Lấy tọa độ nhanh */}
-                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
-                  <label className="mb-2 flex items-center text-sm font-semibold text-blue-800 dark:text-blue-300">
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Lấy tọa độ nhanh từ link Google Maps
+
+          {/* ================= CỘT PHẢI: HỆ THỐNG THẺ THÔNG TIN (Chiếm 7 phần) ================= */}
+          <div className="flex h-full flex-col overflow-hidden lg:col-span-7 bg-gray-50/50 dark:bg-gray-950/30">
+
+            {/* Tiêu đề góc phải form */}
+            <div className="px-6 pt-6 pb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-950/50 dark:text-green-400 mb-2">
+                <Sparkles className="h-3 w-3" /> Studio Sáng Tạo
+              </span>
+              <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                Thêm địa điểm mới
+              </h2>
+            </div>
+
+            {/* Vùng cuộn chứa Form */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-5">
+              <form id="add-location-form" onSubmit={handleAddSubmit} className="space-y-5">
+
+                {/* MODULE 1: TRÍCH XUẤT TỌA ĐỘ NHANH */}
+                <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 p-4 dark:border-blue-900/30">
+                  <label className="mb-2 flex items-center text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-400">
+                    <LinkIcon className="mr-2 h-3.5 w-3.5" />
+                    Nhập nhanh qua Google Maps Link
                   </label>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       value={mapLink}
                       onChange={(e) => setMapLink(e.target.value)}
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      placeholder="Dán link Google Maps vào đây..."
+                      className="flex-1 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm transition-all focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/5 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      placeholder="Thả liên kết bản đồ vào đây..."
                     />
                     <button
                       type="button"
                       onClick={handleExtractFromLink}
-                      className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30"
+                      className="inline-flex shrink-0 items-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-600/10 transition-all hover:bg-blue-700 active:scale-95"
                     >
-                      Trích xuất
+                      Phân tích
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Tên địa điểm *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                      placeholder="VD: Đỉnh Fansipan"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Tỉnh/Thành phố *
-                    </label>
-                    <select
-                      name="province_id"
-                      required
-                      value={formData.province_id}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    >
-                      <option value="">-- Chọn tỉnh thành phố --</option>
-                      {provinces?.map((prov) => (
-                        <option key={prov.id} value={prov.id}>
-                          {prov.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Độ Khó
-                    </label>
-                    <select
-                      name="difficulty_level"
-                      value={formData.difficulty_level}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    >
-                      <option value="">-- Chọn độ khó --</option>
-                      <option value="Dễ">Dễ (Cho người mới)</option>
-                      <option value="Trung Bình">Trung Bình</option>
-                      <option value="Khó">Khó (Đòi hỏi thể lực)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    <FileText className="mr-2 h-4 w-4 text-gray-400" />
-                    Mô tả chi tiết
+                {/* MODULE 2: HÌNH ẢNH ĐẠI DIỆN (Dạng Cinema thuôn dài siêu đẹp) */}
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                  <label className="mb-2.5 flex items-center text-xs font-bold uppercase tracking-wider text-gray-400">
+                    <ImageIcon className="mr-2 h-3.5 w-3.5 text-brand-500" />
+                    Hình ảnh đại diện bài viết
                   </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    rows={3}
-                    placeholder="Viết vài dòng giới thiệu về vẻ đẹp, đặc điểm của nơi này..."
-                  ></textarea>
-                </div>
 
-                <div>
-                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" />
-                    Lưu ý quan trọng
-                  </label>
-                  <textarea
-                    name="note"
-                    value={formData.note}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 transition-all focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    rows={2}
-                    placeholder="VD: Đường đất trơn trượt vào mùa mưa, cần mang giày trekking..."
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="mb-1 flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    <ImageIcon className="mr-2 h-4 w-4 text-gray-400" />
-                    Hình ảnh
-                  </label>
-                  {imageFile ? (
-                    /* --- Giao diện khi ĐÃ chọn ảnh (Xem trước) --- */
-                    <div className="relative h-32 w-30 rounded-xl border-2 border-gray-300 overflow-hidden dark:border-gray-600">
+                  {displayImage ? (
+                    <div className="group relative aspect-[21/9] w-full overflow-hidden rounded-xl border border-gray-100 shadow-inner dark:border-gray-800">
                       {/*eslint-disable-next-line @next/next/no-img-element*/}
                       <img
-                        src={URL.createObjectURL(imageFile)}
+                        src={displayImage}
                         alt="Preview"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                      {/* Nút xóa ảnh */}
-                      <button
-                        type="button"
-                        onClick={() => setImageFile(null)}
-                        className="absolute right-2 top-2 rounded-full bg-gray-900/60 p-1.5 text-white backdrop-blur-sm transition-all hover:bg-red-500"
-                        title="Xóa ảnh"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
+                      {/* Bộ công cụ chỉnh sửa ảnh tối giản ẩn/hiện tinh tế */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 backdrop-blur-xs transition-all duration-300">
+                        <div className="flex gap-2">
+                          <label className="flex cursor-pointer items-center justify-center rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-gray-800 shadow-lg hover:bg-gray-100">
+                            <UploadCloud className="mr-1.5 h-4 w-4" /> Thay ảnh
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files ? e.target.files[0] : null;
+                                if (file) setImageFile(file);
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setImageFile(null)}
+                            className="rounded-xl bg-red-600 px-3 py-2 text-xs font-bold text-white shadow-lg hover:bg-red-700"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    /* --- Giao diện khi CHƯA chọn ảnh (Khung Upload của bạn) --- */
-                    <label className="group flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-brand-500 hover:bg-brand-50/50 dark:border-gray-600 dark:bg-gray-900/50 dark:hover:border-brand-400 dark:hover:bg-gray-800">
-                      <div className="flex flex-col items-center justify-center pb-6 pt-5">
-                        <UploadCloud className="mb-2 h-8 w-8 text-gray-400 group-hover:text-brand-500" />
-                        <p className="mb-1 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold text-brand-600 dark:text-brand-400">Nhấn để tải lên</span> hoặc kéo thả ảnh
+                    <label className="group flex aspect-[21/9] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 transition-all hover:border-brand-500 hover:bg-brand-50/20 dark:border-gray-700 dark:bg-gray-900/30">
+                      <div className="flex flex-col items-center justify-center text-center p-4">
+                        <div className="mb-2 rounded-xl bg-brand-50 p-2.5 text-brand-500 dark:bg-brand-950/40">
+                          <UploadCloud className="h-6 w-6" />
+                        </div>
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                          Tải lên tác phẩm hình ảnh mới
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Hỗ trợ PNG, JPG, WEBP (Tối đa 5MB)
+                        <p className="mt-0.5 text-[10px] text-gray-400">
+                          PNG, JPG, WEBP • Tối đa 5MB
                         </p>
                       </div>
                       <input
@@ -267,48 +209,139 @@ export const AddLocationModal: React.FC<AddLocationModalProps> = ({
                   )}
                 </div>
 
+                {/* MODULE 3: ĐỊNH DANH ĐỊA ĐIỂM (Thông tin cốt lõi) */}
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                      Tên địa danh tôn vinh *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm font-medium text-gray-900 transition-all focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/5 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      placeholder="VD: Bản Cát Cát"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                        Khu vực hành chính *
+                      </label>
+                      <select
+                        name="province_id"
+                        required
+                        value={formData.province_id}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm font-medium text-gray-900 transition-all focus:border-brand-500 focus:bg-white focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      >
+                        <option value="">-- Chọn Tỉnh / Thành --</option>
+                        {provinces?.map((prov) => (
+                          <option key={prov.id} value={prov.id}>
+                            {prov.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                        Cấp độ trải nghiệm
+                      </label>
+                      <select
+                        name="difficulty_level"
+                        value={formData.difficulty_level}
+                        onChange={handleInputChange}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm font-medium text-gray-900 transition-all focus:border-brand-500 focus:bg-white focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      >
+                        <option value="">-- Cấp độ --</option>
+                        <option value="Dễ">🟢 Dễ (Cho mọi lứa tuổi)</option>
+                        <option value="Trung Bình">🟡 Trung Bình (Thể lực nhẹ)</option>
+                        <option value="Khó">🔴 Khó (Thử thách mạo hiểm)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* MODULE 4: NỘI DUNG CHI TIẾT */}
+                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+                  <div>
+                    <label className="mb-1 flex items-center text-xs font-bold uppercase tracking-wider text-gray-400">
+                      <FileText className="mr-1.5 h-3.5 w-3.5 text-gray-400" />
+                      Câu chuyện & Mô tả chi tiết
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 transition-all focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/5 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      rows={4}
+                      placeholder="Khơi nguồn cảm hứng bằng những dòng giới thiệu đặc trưng của tọa độ này..."
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 flex items-center text-xs font-bold uppercase tracking-wider text-amber-500">
+                      <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+                      Cảnh báo & Lưu ý an toàn
+                    </label>
+                    <textarea
+                      name="note"
+                      value={formData.note}
+                      onChange={handleInputChange}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 transition-all focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-brand-500/5 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      rows={2}
+                      placeholder="Thời tiết, trang phục khuyên dùng, lưu ý đường sá..."
+                    ></textarea>
+                  </div>
+                </div>
+
+              </form>
+            </div>
+
+            {/* HÀNH ĐỘNG FOOTER - TINH GỌN, CHUYÊN NGHIỆP */}
+            <div className="flex items-center justify-between border-t border-gray-100 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
+              <p className="hidden text-xs font-semibold text-gray-400 sm:block">
+                Vui lòng kiểm tra kỹ các thông tin gắn dấu <span className="text-red-500">*</span>
+              </p>
+              <div className="flex w-full gap-3 sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                >
+                  Đóng lại
+                </button>
+                <button
+                  type="submit"
+                  form="add-location-form"
+                  disabled={isSaving}
+                  className={`flex items-center justify-center rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg transition-all focus:outline-none ${isSaving
+                    ? "cursor-not-allowed bg-brand-400"
+                    : "bg-brand-600 hover:bg-brand-700 hover:shadow-brand-600/20 active:scale-98"
+                    }`}
+                >
+                  {isSaving ? (
+                    <>
+                      <svg className="mr-2 h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    "Khởi tạo địa điểm"
+                  )}
+                </button>
               </div>
             </div>
-          </form>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/80 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/80">
-          <p className="hidden text-sm text-gray-500 sm:block flex-1">
-            Các trường có dấu <span className="text-red-500">*</span> là bắt buộc.
-          </p>
-          <div className="flex gap-3 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              form="add-location-form"
-              disabled={isSaving}
-              className={`flex items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-brand-500/30 ${isSaving
-                ? "cursor-not-allowed bg-brand-400"
-                : "bg-brand-600 hover:bg-brand-700 hover:shadow-md"
-                }`}
-            >
-              {isSaving ? (
-                <>
-                  <svg className="mr-2 h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Đang xử lý...
-                </>
-              ) : (
-                "Lưu địa điểm"
-              )}
-            </button>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
