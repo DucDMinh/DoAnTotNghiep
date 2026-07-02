@@ -81,18 +81,11 @@ class ProvinceController extends BaseController {
     }
     getAll = async (ctx) => {
         try {
-            const page = parseInt(ctx.query.page) || 1;
-            const limit = parseInt(ctx.query.limit) || 5;
-            const search = ctx.query.search || '';
-            const { data, count, error } = await this.repository.getAll(page, limit, search);
-            if (error) throw error;
+            const { data } = await this.repository.getAll();
             ctx.status = 200;
             ctx.body = {
                 success: true,
                 data: data,
-                total: count,
-                totalPages: Math.ceil(count / limit),
-                currentPage: page
             };
         } catch (error) {
             ctx.status = 500;

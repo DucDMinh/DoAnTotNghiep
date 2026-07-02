@@ -202,7 +202,7 @@ export default function LocationsPage() {
       return;
     }
     try {
-      const response = await fetch("http://localhost:8000/provinces");
+      const response = await fetch(`http://localhost:8000/provinces?limit=1000`);
       const result = await response.json();
       let finalData = [];
       if (Array.isArray(result)) finalData = result;

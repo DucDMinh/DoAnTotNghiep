@@ -46,7 +46,6 @@ router.get('/get-province-from-coords', async (ctx) => {
         });
 
         const address = response.data.address || {};
-        console.log("📍 Địa chỉ nhận được:", address);
 
         const provinceName = address.province || address.state || address.city || address.yes || '';
 

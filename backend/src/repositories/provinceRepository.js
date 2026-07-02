@@ -6,22 +6,13 @@ class ProvinceRepository extends BaseRepository {
         super('provinces');
     }
 
-    async getAll(page = 1, limit = 10, search = '') {
-        const offset = (page - 1) * limit;
-        let query = supabase
-            .from(this.tableName)
-            .select('*, locations(id, name)', { count: 'exact' });
-        if (search) {
-            query = query.ilike('name', `%${search}%`);
-        }
-        query = query
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1);
-        const { data, count, error } = await query;
-
+    async getAll() {
+        const { data, error } = await supabase
+            .from('provinces')
+            .select('*, locations(id, name)')
+            .order('name', { ascending: true }); // Sắp xếp A-Z cho đẹp
         if (error) throw error;
-
-        return { data, count };
+        return { data };
     }
 }
 

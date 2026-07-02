@@ -1,5 +1,5 @@
-import { Edit, Trash2, Eye } from "lucide-react";
-import { Province, Location } from "@/interface"
+import { Edit, Trash2 } from "lucide-react";
+import { Province } from "@/interface"
 import { Popconfirm } from "antd";
 interface ProvinceTableProps {
     provinces: Province[],

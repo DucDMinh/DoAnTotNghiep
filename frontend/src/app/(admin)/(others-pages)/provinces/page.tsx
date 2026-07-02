@@ -34,7 +34,7 @@ export default function ProvincesPage() {
         const toastId = toast.loading(`Đang xóa "${name}"...`);
 
         try {
-            const response = await fetch(`http://localhost:8000/locations/${id}`, {
+            const response = await fetch(`http://localhost:8000/provinces/${id}`, {
                 method: "DELETE"
             });
 
@@ -52,19 +52,13 @@ export default function ProvincesPage() {
     const fetchProvinces = async () => {
         setIsLoading(true);
         try {
-            const params = new URLSearchParams({
-                page: currentPage.toString(),
-                limit: "10",
-                ...(searchQuery && { search: searchQuery }),
-                ...(filterProvince && { province_id: filterProvince })
-            });
-
-            const response = await fetch(`http://localhost:8000/provinces?${params}`);
+            // 🛠️ SỬA: Gọi API gốc, không đính kèm bất kỳ params phân trang nào nữa
+            const response = await fetch(`http://localhost:8000/provinces`);
             const result = await response.json();
 
             if (result.success && result.data) {
                 setProvinces(result.data);
-                setTotalPages(result.totalPages || 1);
+                // Đã xóa setTotalPages ở đây vì không cần thiết nữa
             } else if (Array.isArray(result)) {
                 setProvinces(result);
             }
@@ -77,9 +71,11 @@ export default function ProvincesPage() {
     };
 
     useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
+        // Dùng setTimeout 0 để ép React đưa hàm fetch vào luồng bất đồng bộ, tránh cảnh báo
+        const initTimer = setTimeout(() => {
             fetchProvinces();
-        }, 500);
+        }, 0);
+
         const provinceChannel = supabase.channel("custom-province-channel")
             .on("postgres_changes", { event: "*", schema: "public", table: "provinces" }, () => {
                 sessionStorage.removeItem("provinces_cache");
@@ -88,16 +84,11 @@ export default function ProvincesPage() {
 
         return () => {
             supabase.removeChannel(provinceChannel);
-            clearTimeout(delayDebounceFn)
+            clearTimeout(initTimer);
         };
+        // 🛠️ SỬA QUAN TRỌNG: Chỉ để mảng rỗng [] ở đây
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, filterProvince, searchQuery]);
-
-    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setFilterProvince(e.target.value);
-        setCurrentPage(1);
-    };
-
+    }, []);
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
         setCurrentPage(1);
@@ -117,7 +108,7 @@ export default function ProvincesPage() {
         if (imageFile) submitData.append("image", imageFile);
 
         try {
-            const response = await fetch("http://localhost:8000/locations", {
+            const response = await fetch("http://localhost:8000/provinces", {
                 method: "POST",
                 body: submitData,
             });
@@ -197,6 +188,23 @@ export default function ProvincesPage() {
         setIsAddModalOpen(true);
     };
 
+    const ITEMS_PER_PAGE = 10;
+
+    // 1. Tìm kiếm nội bộ
+    const filteredProvinces = provinces.filter((province) => {
+        if (!searchQuery) return true;
+        return province.name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+    // 2. Tính tổng số trang nội bộ
+    const calculatedTotalPages = Math.ceil(filteredProvinces.length / ITEMS_PER_PAGE) || 1;
+
+    // 3. Cắt 10 tỉnh ra để hiển thị cho trang hiện tại
+    const paginatedProvinces = filteredProvinces.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
     return (
         <div>
             <PageBreadcrumb pageTitle="Quản lý Tỉnh/Thành phố" />
@@ -266,7 +274,7 @@ export default function ProvincesPage() {
                                 </tr>
                             ) : (
                                 <ProvinceTable
-                                    provinces={provinces}
+                                    provinces={paginatedProvinces}
                                     executeDelete={executeDelete}
                                     setIsEditModalOpen={setIsEditModalOpen}
                                     setPickProvince={setPickProvince}
@@ -275,10 +283,12 @@ export default function ProvincesPage() {
                             )}
                         </tbody>
                     </table>
-                    {!isLoading && totalPages > 1 && (
+                    {/* 🛠️ SỬA: Dùng !isLoading && calculatedTotalPages > 1 */}
+                    {!isLoading && calculatedTotalPages > 1 && (
                         <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900 rounded-b-xl">
                             <span className="text-sm text-gray-500 dark:text-gray-400">
-                                Trang {currentPage} trên {totalPages}
+                                {/* 🛠️ SỬA: Hiển thị đúng số trang tính toán */}
+                                Trang {currentPage} trên {calculatedTotalPages}
                             </span>
                             <div className="flex gap-2">
                                 <button
@@ -289,8 +299,9 @@ export default function ProvincesPage() {
                                     Trước
                                 </button>
                                 <button
-                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
+                                    // 🛠️ SỬA: Dùng calculatedTotalPages thay cho totalPages
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, calculatedTotalPages))}
+                                    disabled={currentPage === calculatedTotalPages}
                                     className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                                 >
                                     Sau
