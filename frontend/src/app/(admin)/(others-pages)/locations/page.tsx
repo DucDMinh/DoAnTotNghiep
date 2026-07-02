@@ -247,11 +247,7 @@ export default function LocationsPage() {
     const initTimer = setTimeout(() => {
       fetchProvinces();
     }, 0);
-    const locationChannel = supabase.channel("custom-location-channel")
-      .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, () => {
-        sessionStorage.removeItem("locations_cache");
-        fetchLocations();
-      }).subscribe();
+
 
     const provinceChannel = supabase.channel("custom-province-channel")
       .on("postgres_changes", { event: "*", schema: "public", table: "provinces" }, () => {
@@ -261,7 +257,7 @@ export default function LocationsPage() {
 
     return () => {
       clearTimeout(initTimer);
-      supabase.removeChannel(locationChannel);
+
       supabase.removeChannel(provinceChannel);
     };
   }, []);
@@ -270,8 +266,16 @@ export default function LocationsPage() {
     const delayDebounceFn = setTimeout(() => {
       fetchLocations();
     }, 500);
+    const locationChannel = supabase.channel("custom-location-channel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, () => {
+        sessionStorage.removeItem("locations_cache");
+        fetchLocations();
+      }).subscribe();
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => {
+      supabase.removeChannel(locationChannel);
+      clearTimeout(delayDebounceFn)
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterProvince, searchQuery]);
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

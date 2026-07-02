@@ -82,3 +82,13 @@ export interface EditLocationModalProps {
     imageFile: File | null;
     pickLocation?: Location;
 }
+
+export interface Province {
+    id: string;
+    name: string;
+    description?: string;
+    best_time_to_visit?: string;
+    height?: string;
+    locations?: string;
+    image_url?: string | null;
+}

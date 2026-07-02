@@ -2,182 +2,312 @@
 import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
+import toast, { Toaster } from "react-hot-toast";
+import { Plus, MapPin } from "lucide-react";
+import { Province } from "@/interface";
+import { ProvinceTable } from "@/components/tables/provinceTable";
 
-interface Location {
-    id: string;
-    name: string;
-    description?: string;
-    province_id?: string;
-    provinces?: {
-        name: string;
-    };
-    lat: number;
-    lng: number;
-    img: string | null;
-    difficulty_level?: string;
-    rating?: number;
-    created_at?: string;
-}
 
-export default function LocationsPage() {
-    const [locations, setLocations] = useState<Location[]>([]);
+export default function ProvincesPage() {
     const [isLoading, setIsLoading] = useState(true);
-    const fetchLocations = async () => {
-        const cachedData = sessionStorage.getItem("locations_cache");
+    const [isSaving, setIsSaving] = useState(false);
+    const [pickProvince, setPickProvince] = useState<Province | undefined>(undefined);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterProvince, setFilterProvince] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: "",
+        description: "",
+        best_time_to_visit: "",
+        height: "",
+        locations: "",
+        image_url: "",
+    });
 
-        if (cachedData) {
-            console.log("Đã lấy dữ liệu từ Cache (không gọi API)");
-            setLocations(JSON.parse(cachedData));
-            setIsLoading(false);
-            return;
-        }
+
+    const executeDelete = async (id: string, name: string) => {
+        const toastId = toast.loading(`Đang xóa "${name}"...`);
+
         try {
-            const response = await fetch("http://localhost:8000/locations");
-            const result = await response.json();
-            let finalData = [];
-            if (Array.isArray(result)) {
-                finalData = result;
-            } else if (result.data && Array.isArray(result.data)) {
-                finalData = result.data;
-            } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
-                finalData = result.data.data;
-            } else if (result.success && result.data) {
-                finalData = [result.data];
-            }
-            setLocations(finalData);
+            const response = await fetch(`http://localhost:8000/locations/${id}`, {
+                method: "DELETE"
+            });
 
-            sessionStorage.setItem("locations_cache", JSON.stringify(finalData));
+            if (!response.ok) throw new Error("Lỗi khi xóa");
 
+            toast.success(`Đã xóa "${name}" thành công!`, { id: toastId });
+            sessionStorage.removeItem("locations_cache");
+            fetchProvinces();
         } catch (error) {
-            console.error("Lỗi kết nối đến máy chủ:", error);
+            console.error("Lỗi:", error);
+            toast.error("Xóa thất bại! Vui lòng thử lại.", { id: toastId });
+        }
+    };
+
+    const fetchProvinces = async () => {
+        setIsLoading(true);
+        try {
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: "10",
+                ...(searchQuery && { search: searchQuery }),
+                ...(filterProvince && { province_id: filterProvince })
+            });
+
+            const response = await fetch(`http://localhost:8000/provinces?${params}`);
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                setProvinces(result.data);
+                setTotalPages(result.totalPages || 1);
+            } else if (Array.isArray(result)) {
+                setProvinces(result);
+            }
+        } catch (error) {
+            console.error("Lỗi kết nối:", error);
+            toast.error("Không thể tải danh sách địa điểm!");
         } finally {
             setIsLoading(false);
         }
     };
-    useEffect(() => {
-        fetchLocations();
 
-        const locationChannel = supabase
-            .channel('custom-all-channel')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'locations'
-                },
-                (payload) => {
-                    console.log('Phát hiện thay đổi từ Database:', payload);
-                    sessionStorage.removeItem("locations_cache");
-                    fetchLocations();
-                }
-            )
-            .subscribe();
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchProvinces();
+        }, 500);
+        const provinceChannel = supabase.channel("custom-province-channel")
+            .on("postgres_changes", { event: "*", schema: "public", table: "provinces" }, () => {
+                sessionStorage.removeItem("provinces_cache");
+                fetchProvinces();
+            }).subscribe();
+
         return () => {
-            supabase.removeChannel(locationChannel);
+            supabase.removeChannel(provinceChannel);
+            clearTimeout(delayDebounceFn)
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, filterProvince, searchQuery]);
 
-    useEffect(() => {
-        console.log("Dữ liệu địa điểm đã được cập nhật:", locations);
-    }, [locations]);
+    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setFilterProvince(e.target.value);
+        setCurrentPage(1);
+    };
 
-    const deleteLocation = async (id: string, name: string) => {
-        if (confirm(`Bạn có chắc chắn muốn xóa địa điểm "${name}" không?`)) {
-            fetch(`http://localhost:8000/locations/${id}`, {
-                method: "DELETE",
-            })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error("Lỗi khi xóa địa điểm");
-                    }
-                    sessionStorage.removeItem("locations_cache");
-                    fetchLocations();
-                })
-                .catch((error) => {
-                    console.error("Lỗi:", error);
-                    alert("Đã xảy ra lỗi khi xóa địa điểm.");
-                });
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleAddSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        const toastId = toast.loading("Đang lưu địa điểm lên hệ thống...");
+
+        const submitData = new FormData();
+        submitData.append("name", formData.name);
+        if (formData.description) submitData.append("description", formData.description);
+        if (formData.best_time_to_visit) submitData.append("best_time_to_visit", formData.best_time_to_visit);
+        if (formData.height) submitData.append("height", formData.height);
+        if (formData.locations) submitData.append("locations", formData.locations);
+        if (imageFile) submitData.append("image", imageFile);
+
+        try {
+            const response = await fetch("http://localhost:8000/locations", {
+                method: "POST",
+                body: submitData,
+            });
+
+            if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
+
+            toast.success("Thêm địa điểm thành công!", { id: toastId });
+
+            setIsAddModalOpen(false);
+            setFormData({ name: "", description: "", best_time_to_visit: "", height: "", locations: "", image_url: "" });
+            setImageFile(null);
+
+            sessionStorage.removeItem("locations_cache");
+            fetchProvinces();
+        } catch (error) {
+            console.error("Lỗi:", error);
+            toast.error("Lưu thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+        } finally {
+            setIsSaving(false);
         }
-    }
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pickProvince) {
+            toast.error("Không tìm thấy dữ liệu địa điểm cần sửa!");
+            return;
+        }
+        setIsSaving(true);
+        const toastId = toast.loading("Đang cập nhật địa điểm...");
+
+        const submitData = new FormData();
+        submitData.append("name", formData.name);
+        if (formData.description) submitData.append("description", formData.description);
+        if (formData.best_time_to_visit) submitData.append("best_time_to_visit", formData.best_time_to_visit);
+        if (formData.height) submitData.append("height", formData.height);
+        if (formData.locations) submitData.append("locations", formData.locations);
+        if (imageFile) {
+            submitData.append("image", imageFile);
+        }
+        // MẸO: Nếu API của bạn cần cờ báo xóa ảnh cũ (khi người dùng bấm X xóa ảnh mà không tải ảnh mới)
+        // else if (!oldImageUrl && pickProvince.img) {
+        //     submitData.append("delete_old_image", "true"); 
+        // }
+
+        try {
+            const response = await fetch(`http://localhost:8000/locations/${pickProvince.id}`, {
+                method: "PUT",
+                body: submitData,
+            });
+
+            if (!response.ok) throw new Error("Lỗi khi cập nhật địa điểm");
+
+            toast.success("Cập nhật địa điểm thành công!", { id: toastId });
+
+            setIsEditModalOpen(false);
+            setPickProvince(undefined);
+            setFormData({ name: "", description: "", best_time_to_visit: "", height: "", locations: "", image_url: "" });
+            setImageFile(null);
+            sessionStorage.removeItem("provinces_cache");
+            fetchProvinces();
+
+        } catch (error) {
+            console.error("Lỗi:", error);
+            toast.error("Cập nhật thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleOpenModal = async () => {
+        setIsAddModalOpen(true);
+    };
 
     return (
         <div>
-            <PageBreadcrumb pageTitle="Quản lý Địa điểm" />
+            <PageBreadcrumb pageTitle="Quản lý Tỉnh/Thành phố" />
+            <Toaster position="top-right" reverseOrder={false} />
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-                        Danh sách địa điểm
-                    </h3>
-                    <button className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
-                        + Thêm địa điểm
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
+                            Danh sách tỉnh/thành phố
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Quản lý các tỉnh/thành phố trong hệ thống
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="inline-flex items-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-500/30"
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Thêm tỉnh/thành phố
                     </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-                        <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
+                        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                            {/* Ô tìm kiếm */}
+                            <input
+                                type="text"
+                                placeholder="Tìm tên địa điểm..."
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:w-64 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                            />
+                        </div>
+                    </div>
+                    <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                        <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
                             <tr>
-                                <th className="px-6 py-3">Hình ảnh</th>
-                                <th className="px-6 py-3">Tên địa điểm</th>
-                                <th className="px-6 py-3">Tỉnh thành</th>
-                                <th className="px-6 py-3 text-right">Hành động</th>
+                                <th className="px-6 py-4 font-semibold">Hình ảnh</th>
+                                <th className="px-6 py-4 font-semibold">Tên Tỉnh thành</th>
+                                <th className="px-6 py-4 font-semibold">Độ cao </th>
+                                <th className="px-6 py-4 text-right font-semibold">Hành động</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-4 text-center">
-                                        Đang tải dữ liệu...
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <svg className="mb-2 h-6 w-6 animate-spin text-brand-500" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Đang tải dữ liệu...
+                                        </div>
                                     </td>
                                 </tr>
-                            ) : !Array.isArray(locations) || locations.length === 0 ? (
+                            ) : !Array.isArray(provinces) || provinces.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-4 text-center text-gray-400">
-                                        Chưa có địa điểm nào trong cơ sở dữ liệu (hoặc API lỗi).
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                                        <MapPin className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+                                        Chưa có địa điểm nào trong hệ thống.
                                     </td>
                                 </tr>
                             ) : (
-                                locations.map((loc) => (
-                                    <tr
-                                        key={loc.id}
-                                        className="border-b bg-white dark:border-gray-700 dark:bg-gray-900"
-                                    >
-                                        <td className="px-6 py-4">
-                                            {loc.img ? (
-                                                <img
-                                                    src={loc.img}
-                                                    alt={loc.name}
-                                                    className="h-12 w-12 rounded-lg object-cover"
-                                                />
-                                            ) : (
-                                                <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-500">
-                                                    No Image
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                                            {loc.name}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {loc.provinces?.name || "Chưa cập nhật"}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="font-medium text-blue-600 hover:underline mr-3">
-                                                Sửa
-                                            </button>
-                                            <button className="font-medium text-red-600 hover:underline" onClick={() => deleteLocation(loc.id, loc.name)}>
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                <ProvinceTable
+                                    provinces={provinces}
+                                    executeDelete={executeDelete}
+                                    setIsEditModalOpen={setIsEditModalOpen}
+                                    setPickProvince={setPickProvince}
+                                    setFormData={setFormData}
+                                />
                             )}
                         </tbody>
                     </table>
+                    {!isLoading && totalPages > 1 && (
+                        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900 rounded-b-xl">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Trang {currentPage} trên {totalPages}
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    Trước
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {isAddModalOpen && (<div></div>
+            )}
+
+            {isEditModalOpen && (
+                <div></div>
+            )}
+
         </div>
     );
 }
