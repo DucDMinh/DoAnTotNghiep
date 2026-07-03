@@ -28,6 +28,7 @@ export class BaseController {
             ctx.body = { success: true, message: `Lấy thông tin ${this.itemName} thành công`, data };
         } catch (error) {
             ctx.status = 500;
+            console.log(error);
             ctx.body = { success: false, message: `Lỗi hệ thống khi lấy ${this.itemName}`, error_detail: error.message };
         }
     }

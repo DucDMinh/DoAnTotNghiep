@@ -35,6 +35,11 @@ const navItems: NavItem[] = [
     name: "Tỉnh/Thành phố",
     path: "/provinces",
   },
+  {
+    icon: <TableIcon />,
+    name: "Lộ trình",
+    path: "/builder",
+  },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -67,7 +72,9 @@ const AppSidebar: React.FC = () => {
     });
 
     if (!submenuMatched) {
-      setOpenSubmenu(null);
+      setTimeout(() => {
+        setOpenSubmenu(null);
+      }, 0);
     }
   }, [pathname, isActive]);
 
