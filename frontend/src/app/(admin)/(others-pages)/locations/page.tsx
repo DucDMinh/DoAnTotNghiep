@@ -4,11 +4,11 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
 import { AddLocationModal } from "@/components/modals/addLocation";
 import toast, { Toaster } from "react-hot-toast";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, Search, Filter, Globe, Sparkles, Map } from "lucide-react";
 import { LocationTable } from "@/components/tables/locationsTable";
-import type { Location } from "@/interface"
+import type { Location } from "@/interface";
 import { EditLocationModal } from "@/components/modals/editLocation";
-
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -35,6 +35,8 @@ export default function LocationsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
 
+  // === CÁC HÀM XỬ LÝ LOGIC (Giữ nguyên hoàn toàn sự ổn định của bạn) ===
+
   const handleExtractFromLink = async () => {
     if (!mapLink) {
       toast.error("Vui lòng nhập link Google Maps!");
@@ -47,7 +49,7 @@ export default function LocationsPage() {
       cleanLink = "https://" + cleanLink.split("https://")[1];
     }
 
-    const toastId = toast.loading("Đang trích xuất dữ liệu bản đồ...");
+    const toastId = toast.loading("Đang trích xuất dữ liệu không gian...");
 
     try {
       const response = await fetch(`http://localhost:8000/extract-map?url=${encodeURIComponent(cleanLink)}`);
@@ -160,22 +162,24 @@ export default function LocationsPage() {
 
       if (lat && lng) {
         setFormData((prev) => ({ ...prev, lat, lng }));
-        toast.success("Đã lấy được tọa độ dự phòng (Mạng lỗi)!", { id: toastId });
+        toast.success("Đã lấy được tọa độ dự phòng!", { id: toastId });
       } else {
         toast.error("Không thể trích xuất dữ liệu từ link này.", { id: toastId });
       }
     }
   };
+
   const removeAccents = (str: string) => {
     return str
-      .normalize("NFD") // Tách các dấu khỏi ký tự
-      .replace(/[\u0300-\u036f]/g, "") // Xóa các ký tự dấu
-      .toLowerCase() // Chuyển về chữ thường để so sánh không phân biệt hoa/thường
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
       .replace(/đ/g, "d")
       .replace(/Đ/g, "D");
   };
+
   const executeDelete = async (id: string, name: string) => {
-    const toastId = toast.loading(`Đang xóa "${name}"...`);
+    const toastId = toast.loading(`Đang vô hiệu hóa "${name}"...`);
 
     try {
       const response = await fetch(`http://localhost:8000/locations/${id}`, {
@@ -243,11 +247,11 @@ export default function LocationsPage() {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     const initTimer = setTimeout(() => {
       fetchProvinces();
     }, 0);
-
 
     const provinceChannel = supabase.channel("custom-province-channel")
       .on("postgres_changes", { event: "*", schema: "public", table: "provinces" }, () => {
@@ -257,7 +261,6 @@ export default function LocationsPage() {
 
     return () => {
       clearTimeout(initTimer);
-
       supabase.removeChannel(provinceChannel);
     };
   }, []);
@@ -278,6 +281,7 @@ export default function LocationsPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterProvince, searchQuery]);
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterProvince(e.target.value);
     setCurrentPage(1);
@@ -302,7 +306,7 @@ export default function LocationsPage() {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    const toastId = toast.loading("Đang lưu địa điểm lên hệ thống...");
+    const toastId = toast.loading("Đang thiết lập tọa độ lên hệ thống...");
 
     const submitData = new FormData();
     submitData.append("name", formData.name);
@@ -322,7 +326,7 @@ export default function LocationsPage() {
 
       if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
 
-      toast.success("Thêm địa điểm thành công!", { id: toastId });
+      toast.success("Khởi tạo không gian thành công!", { id: toastId });
 
       setIsAddModalOpen(false);
       setFormData({ name: "", description: "", note: "", lat: "", lng: "", province_id: "", difficulty_level: "" });
@@ -333,7 +337,7 @@ export default function LocationsPage() {
       fetchLocations();
     } catch (error) {
       console.error("Lỗi:", error);
-      toast.error("Lưu thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+      toast.error("Lưu thất bại! Cổng kết nối có vấn đề.", { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -346,7 +350,7 @@ export default function LocationsPage() {
       return;
     }
     setIsSaving(true);
-    const toastId = toast.loading("Đang cập nhật địa điểm...");
+    const toastId = toast.loading("Đang tái cấu trúc địa điểm...");
 
     const submitData = new FormData();
     submitData.append("name", formData.name);
@@ -359,10 +363,6 @@ export default function LocationsPage() {
     if (imageFile) {
       submitData.append("image", imageFile);
     }
-    // MẸO: Nếu API của bạn cần cờ báo xóa ảnh cũ (khi người dùng bấm X xóa ảnh mà không tải ảnh mới)
-    // else if (!oldImageUrl && pickLocation.img) {
-    //     submitData.append("delete_old_image", "true"); 
-    // }
 
     try {
       const response = await fetch(`http://localhost:8000/locations/${pickLocation.id}`, {
@@ -370,9 +370,9 @@ export default function LocationsPage() {
         body: submitData,
       });
 
-      if (!response.ok) throw new Error("Lỗi khi cập nhật địa điểm");
+      if (!response.ok) throw new Error("Lỗi khi cập nhật");
 
-      toast.success("Cập nhật địa điểm thành công!", { id: toastId });
+      toast.success("Cập nhật tọa độ thành công!", { id: toastId });
 
       setIsEditModalOpen(false);
       setPickLocation(undefined);
@@ -385,7 +385,7 @@ export default function LocationsPage() {
 
     } catch (error) {
       console.error("Lỗi:", error);
-      toast.error("Cập nhật thất bại! Hãy kiểm tra lại kết nối.", { id: toastId });
+      toast.error("Cập nhật thất bại! Cổng kết nối có vấn đề.", { id: toastId });
     } finally {
       setIsSaving(false);
     }
@@ -396,52 +396,78 @@ export default function LocationsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleOpenModal = async () => {
-    setIsAddModalOpen(true);
-  };
-
+  // === RENDER GIAO DIỆN ===
   return (
-    <div>
-      <PageBreadcrumb pageTitle="Quản lý Địa điểm" />
+    <div className="min-h-screen pb-12">
+      <PageBreadcrumb pageTitle="Quản lý Không gian & Địa điểm" />
       <Toaster position="top-right" reverseOrder={false} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-3xl bg-gray-900 p-8 text-white shadow-2xl mb-8 dark:bg-gray-950 border border-gray-800"
+      >
+        <div className="absolute -right-20 -top-20 opacity-10 pointer-events-none">
+          <Globe className="h-96 w-96 animate-[spin_120s_linear_infinite]" />
+        </div>
+        <div className="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-brand-600/20 to-transparent pointer-events-none"></div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
-              Danh sách địa điểm
-            </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Quản lý các địa điểm phượt và tọa độ trên bản đồ
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-300 backdrop-blur-md mb-4 border border-brand-500/30">
+              <Sparkles className="h-3.5 w-3.5" /> Quản trị bản đồ
+            </span>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-2">
+              Trung tâm Tọa độ
+            </h1>
+            <p className="max-w-xl text-sm text-gray-400 font-medium leading-relaxed">
+              Khám phá, thiết lập và lưu trữ các điểm đến tuyệt vời nhất. Quản lý hệ thống bản đồ du lịch của bạn tại một nơi duy nhất.
             </p>
           </div>
+
           <button
-            onClick={() => handleOpenModal()}
-            className="inline-flex items-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-500/30"
+            onClick={() => setIsAddModalOpen(true)}
+            className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-brand-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-brand-500/30 transition-all hover:scale-105 hover:bg-brand-500 hover:shadow-brand-500/50 active:scale-95"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm địa điểm
+            <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-100%)] group-hover:duration-1000 group-hover:[transform:skew(-12deg)_translateX(100%)]">
+              <div className="relative h-full w-8 bg-white/20"></div>
+            </div>
+            <Plus className="mr-2 h-5 w-5" />
+            <span>Khởi tạo Tọa độ mới</span>
           </button>
         </div>
-
-        <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-gray-50 p-4 dark:bg-gray-800/50">
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              {/* Ô tìm kiếm */}
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <div className="mb-6 flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="flex w-full lg:w-auto flex-col sm:flex-row items-center gap-3 bg-white/80 p-2 rounded-2xl shadow-sm border border-gray-200/60 backdrop-blur-xl dark:bg-gray-900/80 dark:border-gray-800">
+            <div className="relative w-full sm:w-72">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
               <input
                 type="text"
-                placeholder="Tìm tên địa điểm..."
+                placeholder="Tìm kiếm địa danh..."
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:w-64 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                className="block w-full rounded-xl border-none bg-gray-50/50 py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 transition-all focus:bg-white focus:ring-2 focus:ring-brand-500/50 dark:bg-gray-800/50 dark:text-white placeholder:text-gray-400"
               />
-              {/* Lọc theo tỉnh */}
+            </div>
+
+            <div className="hidden sm:block h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+            <div className="relative w-full sm:w-56">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <Filter className="h-4 w-4 text-brand-500" />
+              </div>
               <select
                 value={filterProvince}
                 onChange={handleFilterChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 sm:w-48 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                className="block w-full appearance-none rounded-xl border-none bg-brand-50/50 py-2.5 pl-10 pr-8 text-sm font-bold text-brand-700 transition-all focus:bg-brand-50 focus:ring-2 focus:ring-brand-500/50 dark:bg-brand-900/20 dark:text-brand-400 cursor-pointer"
               >
-                <option value="">Tất cả tỉnh thành</option>
+                <option value="">Tất cả Vùng miền</option>
                 {provinces?.map((prov) => (
                   <option key={prov.id} value={prov.id}>
                     {prov.name}
@@ -450,107 +476,122 @@ export default function LocationsPage() {
               </select>
             </div>
           </div>
-          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800/50 dark:text-gray-300">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Hình ảnh</th>
-                <th className="px-6 py-4 font-semibold">Tên địa điểm</th>
-                <th className="px-6 py-4 font-semibold">Tỉnh thành</th>
-                <th className="px-6 py-4 text-right font-semibold">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-4 py-2.5 rounded-2xl shadow-sm border border-gray-200/60 dark:border-gray-800 hidden lg:block">
+            Khu vực quản lý dữ liệu
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-xl shadow-gray-200/40 dark:border-gray-800 dark:bg-gray-900 dark:shadow-none relative">
 
-              {isLoading ? (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+              <thead className="bg-gray-50/80 backdrop-blur-md text-xs uppercase tracking-widest text-gray-500 dark:bg-gray-800/80 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <svg className="mb-2 h-6 w-6 animate-spin text-brand-500" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Đang tải dữ liệu...
-                    </div>
-                  </td>
+                  <th className="px-6 py-5 font-bold">Hình ảnh</th>
+                  <th className="px-6 py-5 font-bold">Tên địa điểm</th>
+                  <th className="px-6 py-5 font-bold">Tỉnh thành</th>
+                  <th className="px-6 py-5 text-right font-bold">Hành động</th>
                 </tr>
-              ) : !Array.isArray(locations) || locations.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                    <MapPin className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-                    Chưa có địa điểm nào trong hệ thống.
-                  </td>
-                </tr>
-              ) : (
-                <LocationTable
-                  locations={locations}
-                  executeDelete={executeDelete}
-                  setIsEditModalOpen={setIsEditModalOpen}
-                  setPickLocation={setPickLocation}
-                  setFormData={setFormData}
-                />
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-900/20">
+                          <Map className="h-6 w-6 animate-pulse text-brand-500" />
+                          <div className="absolute inset-0 rounded-xl border-2 border-brand-500 opacity-20 animate-ping"></div>
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-wider text-gray-400">Đang đồng bộ dữ liệu...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : !Array.isArray(locations) || locations.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-16 text-center">
+                      <div className="mx-auto max-w-sm flex flex-col items-center justify-center p-6 rounded-3xl bg-gray-50 border border-dashed border-gray-200 dark:bg-gray-800/30 dark:border-gray-700">
+                        <div className="mb-4 rounded-full bg-gray-100 p-4 dark:bg-gray-800">
+                          <MapPin className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="mb-1 text-base font-bold text-gray-900 dark:text-white">Không gian trống</h3>
+                        <p className="text-xs text-gray-500">Chưa có tọa độ nào được ghi nhận tại đây. Hãy khởi tạo một địa điểm mới.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <LocationTable
+                    locations={locations}
+                    executeDelete={executeDelete}
+                    setIsEditModalOpen={setIsEditModalOpen}
+                    setPickLocation={setPickLocation}
+                    setFormData={setFormData}
+                  />
+                )}
+              </tbody>
+            </table>
+          </div>
           {!isLoading && totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-900 rounded-b-xl">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Trang {currentPage} trên {totalPages}
+            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800/50 dark:bg-gray-900">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                Trang <span className="text-brand-600 dark:text-brand-400">{currentPage}</span> / {totalPages}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
-                  Trước
+                  Quay lại
                 </button>
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
-                  Sau
+                  Tiếp tiến
                 </button>
               </div>
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <AddLocationModal
+            setIsAddModalOpen={setIsAddModalOpen}
+            formData={formData}
+            setFormData={setFormData}
+            mapLink={mapLink}
+            setMapLink={setMapLink}
+            setImageFile={setImageFile}
+            handleInputChange={handleInputChange}
+            handleExtractFromLink={handleExtractFromLink}
+            handleAddSubmit={handleAddSubmit}
+            provinces={provinces}
+            isSaving={isSaving}
+            imageFile={imageFile}
+          />
+        )}
+      </AnimatePresence>
 
-      {isAddModalOpen && (
-        <AddLocationModal
-          setIsAddModalOpen={setIsAddModalOpen}
-          formData={formData}
-          setFormData={setFormData}
-          mapLink={mapLink}
-          setMapLink={setMapLink}
-          setImageFile={setImageFile}
-          handleInputChange={handleInputChange}
-          handleExtractFromLink={handleExtractFromLink}
-          handleAddSubmit={handleAddSubmit}
-          provinces={provinces}
-          isSaving={isSaving}
-          imageFile={imageFile}
-        />
-      )}
-
-      {isEditModalOpen && (
-        <EditLocationModal
-          setIsEditModalOpen={setIsEditModalOpen}
-          formData={formData}
-          setFormData={setFormData}
-          mapLink={mapLink}
-          setMapLink={setMapLink}
-          setImageFile={setImageFile}
-          handleInputChange={handleInputChange}
-          handleExtractFromLink={handleExtractFromLink}
-          handleEditSubmit={handleEditSubmit}
-          provinces={provinces}
-          isSaving={isSaving}
-          imageFile={imageFile}
-          pickLocation={pickLocation}
-        />
-      )}
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <EditLocationModal
+            setIsEditModalOpen={setIsEditModalOpen}
+            formData={formData}
+            setFormData={setFormData}
+            mapLink={mapLink}
+            setMapLink={setMapLink}
+            setImageFile={setImageFile}
+            handleInputChange={handleInputChange}
+            handleExtractFromLink={handleExtractFromLink}
+            handleEditSubmit={handleEditSubmit}
+            provinces={provinces}
+            isSaving={isSaving}
+            imageFile={imageFile}
+            pickLocation={pickLocation}
+          />
+        )}
+      </AnimatePresence>
 
     </div>
   );
