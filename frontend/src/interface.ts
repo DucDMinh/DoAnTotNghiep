@@ -89,6 +89,6 @@ export interface Province {
     description?: string;
     best_time_to_visit?: string;
     height?: string;
-    locations?: string;
+    locations?: { id: string; name: string }[];
     image_url?: string | null;
 }

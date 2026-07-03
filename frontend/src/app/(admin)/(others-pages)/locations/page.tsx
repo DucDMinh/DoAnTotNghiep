@@ -9,6 +9,7 @@ import { LocationTable } from "@/components/tables/locationsTable";
 import type { Location } from "@/interface";
 import { EditLocationModal } from "@/components/modals/editLocation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/dist/client/components/navigation";
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -16,7 +17,6 @@ export default function LocationsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mapLink, setMapLink] = useState("");
   const [pickLocation, setPickLocation] = useState<Location>();
-  const [searchQuery, setSearchQuery] = useState("");
   const [filterProvince, setFilterProvince] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -34,6 +34,11 @@ export default function LocationsPage() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+  const searchParams = useSearchParams();
+
+  // 2. Lấy chữ từ URL ném làm giá trị khởi tạo cho biến searchQuery
+  const initialSearch = searchParams.get("search") || "";
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
 
   // === CÁC HÀM XỬ LÝ LOGIC (Giữ nguyên hoàn toàn sự ổn định của bạn) ===
 
@@ -592,7 +597,6 @@ export default function LocationsPage() {
           />
         )}
       </AnimatePresence>
-
     </div>
   );
 }

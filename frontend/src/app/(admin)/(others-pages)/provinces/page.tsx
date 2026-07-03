@@ -9,6 +9,7 @@ import { ProvinceTable } from "@/components/tables/provinceTable";
 import { AddProvinceModal } from "@/components/modals/AddProvinceModal";
 import { EditProvinceModal } from "@/components/modals/EditProvinceModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { ListLocationsModal } from "@/components/modals/ListLocationsModal";
 
 export default function ProvincesPage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -17,19 +18,18 @@ export default function ProvincesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [provinces, setProvinces] = useState<Province[]>([]);
+
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isListModalOpen, setIsListModalOpen] = useState(false);
 
     // === CÁC HÀM XỬ LÝ LOGIC ===
-
     const executeDelete = async (id: string, name: string) => {
         const toastId = toast.loading(`Đang vô hiệu hóa "${name}"...`);
-
         try {
             const response = await fetch(`http://localhost:8000/provinces/${id}`, {
                 method: "DELETE"
             });
-
             if (!response.ok) throw new Error("Lỗi khi xóa");
 
             toast.success(`Đã xóa "${name}" thành công!`, { id: toastId });
@@ -96,7 +96,6 @@ export default function ProvincesPage() {
             if (!response.ok) throw new Error("Lỗi khi thêm tỉnh/thành phố");
 
             toast.success("Khởi tạo không gian thành công!", { id: toastId });
-
             setIsAddModalOpen(false);
             sessionStorage.removeItem("provinces_cache");
             fetchProvinces();
@@ -126,7 +125,6 @@ export default function ProvincesPage() {
             if (!response.ok) throw new Error("Lỗi khi cập nhật");
 
             toast.success("Cập nhật tọa độ thành công!", { id: toastId });
-
             setIsEditModalOpen(false);
             setPickProvince(undefined);
             sessionStorage.removeItem("provinces_cache");
@@ -260,6 +258,7 @@ export default function ProvincesPage() {
                                     </tr>
                                 ) : (
                                     <ProvinceTable
+                                        setIsListModalOpen={setIsListModalOpen}
                                         provinces={paginatedProvinces}
                                         executeDelete={executeDelete}
                                         setIsEditModalOpen={setIsEditModalOpen}
@@ -320,6 +319,15 @@ export default function ProvincesPage() {
                         onEdit={handleEditSubmit}
                         isSaving={isSaving}
                         province={pickProvince}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isListModalOpen && (
+                    <ListLocationsModal
+                        onClose={() => setIsListModalOpen(false)}
+                        setIsListModalOpen={setIsListModalOpen}
                     />
                 )}
             </AnimatePresence>

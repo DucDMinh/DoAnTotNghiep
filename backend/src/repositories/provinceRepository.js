@@ -14,6 +14,15 @@ class ProvinceRepository extends BaseRepository {
         if (error) throw error;
         return { data };
     }
+    async getById(id) {
+        const { data, error } = await supabase
+            .from(this.tableName)
+            .select('*, locations(id, name)')
+            .eq('id', id)
+            .single();
+        if (error) throw error;
+        return data;
+    }
 }
 
 export const provinceRepo = new ProvinceRepository();
