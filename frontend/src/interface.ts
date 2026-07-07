@@ -92,3 +92,16 @@ export interface Province {
     locations?: { id: string; name: string }[];
     image_url?: string | null;
 }
+
+export interface Itinerary {
+    id: string;
+    title: string;
+    summary: string;
+    start_date: string;
+    end_date: string;
+    theme: string;
+    days?: number;
+    nights?: number;
+    estimated_cost: number;
+    image_url?: string | undefined;
+}

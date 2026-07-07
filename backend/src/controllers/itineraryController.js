@@ -1,5 +1,6 @@
 import { itineraryRepo } from "../repositories/itineraryRepository.js";
 import { itineraryDaysRepo } from "../repositories/itinerary_daysRepository.js";
+import { itineraryLocationsRepo } from "../repositories/itinerary_locationsRepository.js";
 import { BaseController } from "./baseController.js";
 
 class ItineraryController extends BaseController {

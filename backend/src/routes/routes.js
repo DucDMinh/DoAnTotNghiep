@@ -19,7 +19,7 @@ router.delete('/provinces/:id', provinceController.deleteProvince);
 router.put('/provinces/:id', upload.single('image'), provinceController.updateProvince);
 
 router.post('/itineraries', upload.single('image'), itineraryController.createItinerary);
-router.get('/itineraries/', itineraryController.getAllItineraries);
+router.get('/itineraries', itineraryController.getAllItineraries);
 router.get('/itineraries/:id', itineraryController.getItineraryById);
 router.put('/itineraries/:id', upload.single('image'), itineraryController.updateItinerary);
 router.delete('/itineraries/:id', itineraryController.deleteItinerary);
