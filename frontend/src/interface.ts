@@ -11,7 +11,7 @@ export interface Location {
     };
     lat: number;
     lng: number;
-    img: string | null;
+    img: string | undefined;
     difficulty_level?: string;
     rating?: number;
     created_at?: string;
@@ -104,4 +104,24 @@ export interface Itinerary {
     nights?: number;
     estimated_cost: number;
     image_url?: string | undefined;
+}
+
+export interface SetupScreenProp {
+    selectedProvinces: {
+        id: string;
+        name: string;
+    }[],
+    setSelectedProvinces: React.Dispatch<React.SetStateAction<{
+        id: string;
+        name: string;
+    }[]>>,
+    setLocations: Dispatch<SetStateAction<Location[]>>,
+    setStep: Dispatch<SetStateAction<"BUILDER" | "SETUP">>,
+    setCurrentItinerary: Dispatch<SetStateAction<{
+        title: string;
+        startDate: string;
+        endDate: string;
+        theme: string;
+    }>>,
+    step: "BUILDER" | "SETUP"
 }

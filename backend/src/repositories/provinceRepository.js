@@ -17,7 +17,7 @@ class ProvinceRepository extends BaseRepository {
     async getById(id) {
         const { data, error } = await supabase
             .from(this.tableName)
-            .select('*, locations(id, name)')
+            .select('*, locations(id, name, img, difficulty_level)')
             .eq('id', id)
             .single();
         if (error) throw error;
