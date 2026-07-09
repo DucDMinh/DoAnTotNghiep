@@ -5,16 +5,248 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { BuilderScreenProp } from "@/interface";
+import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
+import React from "react";
+import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
+import toast from "react-hot-toast";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DraggableLocationCard = ({ loc }: { loc: any }) => {
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+        id: `drag-loc-${loc.id}`,
+        data: { location: loc }
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            {...listeners}
+            {...attributes}
+            className={`group relative flex cursor-grab items-center gap-3 rounded-xl border p-3 shadow-sm transition-all active:cursor-grabbing ${isDragging ? 'opacity-40 border-brand-300' : 'border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 hover:border-brand-300 hover:shadow-md'
+                }`}
+        >
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 pointer-events-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={loc.image_url || loc.img} alt={loc.name} className="h-full w-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 pointer-events-none">
+                <h4 className="truncate text-sm font-bold text-gray-900 dark:text-white">{loc.name}</h4>
+                <div className="mt-1 flex items-center gap-1.5 text-xs">
+                    <span className="text-green-500 font-medium">{loc.difficulty_level || loc.difficulty}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 2. COMPONENT: Ô nhập liệu Thông Minh (3-in-1: Gõ + Kéo Thả + Bản đồ)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DroppableActivityZone = ({ dayId, loc, onUpdate }: { dayId: string, loc: any, onUpdate: any }) => {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `drop-activity-${dayId}-${loc.id}`,
+        data: { type: 'existing-activity', dayId, activityId: loc.id }
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`relative flex items-center rounded-lg border bg-white transition-all overflow-hidden h-[42px] ${isOver ? 'border-brand-500 bg-brand-50 shadow-md ring-2 ring-brand-500/20 dark:bg-brand-900/30' : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800'
+                }`}
+        >
+            {/* 1. Ô GÕ TAY (Tự động cập nhật Tên và xóa ID nếu gõ) */}
+            <input
+                type="text"
+                placeholder={isOver ? "✨ Thả địa điểm vào đây..." : "Gõ tên, kéo thả, hoặc chọn Map..."}
+                value={loc.location_name || ''}
+                onChange={(e) => {
+                    // Cập nhật tên theo người dùng gõ
+                    onUpdate(dayId, loc.id, 'location_name', e.target.value);
+
+                    // 💡 TRICK CHÍ MẠNG: Nếu người dùng sửa text, chứng tỏ họ không dùng địa điểm chuẩn nữa -> Xóa location_id
+                    if (loc.location_id) {
+                        onUpdate(dayId, loc.id, 'location_id', "");
+                    }
+                }}
+                className={`flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-gray-400 dark:text-white ${isOver ? 'text-brand-600' : ''}`}
+            />
+
+            <div className="flex h-full items-center">
+                {/* 2. DẤU HIỆU NHẬN BIẾT ĐỊA ĐIỂM CHUẨN */}
+                {/* Nếu có location_id, hiện dấu Tick xanh báo hiệu đây là dữ liệu xịn từ Database */}
+                {loc.location_id && (
+                    <div className="flex h-full items-center px-2.5 border-l border-gray-100 dark:border-gray-700 bg-green-50 dark:bg-green-900/20 text-green-600" title="Địa điểm chuẩn từ hệ thống">
+                        <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                )}
+
+                {/* 3. NÚT MỞ BẢN ĐỒ */}
+                <button
+                    onClick={() => {
+                        // Gọi hàm mở Modal Map (bạn sẽ truyền từ prop vào sau)
+                        alert("Sẽ mở Popup Bản đồ Google Maps ở đây!");
+                    }}
+                    className="flex h-full shrink-0 items-center justify-center gap-1.5 bg-gray-50 hover:bg-brand-50 hover:text-brand-600 px-3 text-xs font-bold text-gray-600 transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:text-brand-400 border-l border-gray-200 dark:border-gray-700"
+                >
+                    <Map className="h-4 w-4" /> Bản đồ
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const DroppableAddButton = ({ dayId, onAdd }: { dayId: string, onAdd: () => void }) => {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `drop-new-${dayId}`,
+        data: { type: 'new-activity', dayId }
+    });
+
+    return (
+        <button
+            ref={setNodeRef}
+            onClick={onAdd}
+            className={`flex w-full items-center justify-center rounded-xl border-2 border-dashed py-3 text-sm font-medium transition-all ${isOver ? 'border-brand-500 bg-brand-50 text-brand-600 scale-[1.02] shadow-sm dark:bg-brand-900/30 dark:text-brand-400'
+                : 'border-gray-200 bg-gray-50/50 text-gray-500 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-800/30'
+                }`}
+        >
+            <Plus className="mr-2 h-4 w-4" />
+            {isOver ? "✨ Thả để tạo ngay hoạt động mới!" : "Thêm hoạt động (hoặc Kéo thả vào đây)"}
+        </button>
+    );
+};
 export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedProvinces, currentItinerary, setCurrentItinerary, locations }) => {
+    const [days, setDays] = useState<Itinerary_days[]>([]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [days, setDays] = useState<any[]>([]);
+    const [activeDragLoc, setActiveDragLoc] = useState<any>(null);
     const calculateTotalCost = () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return days.reduce((total, day) => total + (day.locations?.reduce((sum: number, loc: any) => sum + (loc.cost || 0), 0) || 0), 0);
+        return days.reduce((total, day) => {
+            const dayCost = day.locations?.reduce((sum, loc) => sum + (Number(loc.cost) || 0), 0) || 0;
+            return total + dayCost;
+        }, 0);
+    };
+    const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    React.useEffect(() => {
+        if (currentItinerary.start_date && currentItinerary.end_date) {
+            const start = new Date(currentItinerary.start_date);
+            const end = new Date(currentItinerary.end_date);
+            if (end >= start) {
+                const diffTime = end.getTime() - start.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                setTimeout(() => {
+                    setDays(prevDays => {
+                        const newDays = [...prevDays];
+                        if (newDays.length < diffDays) {
+                            for (let i = newDays.length + 1; i <= diffDays; i++) {
+                                newDays.push({
+                                    id: `day-${Date.now()}-${i}`,
+                                    day_number: i,
+                                    title: `Ngày ${i}`,
+                                    locations: []
+                                });
+                            }
+                            return newDays;
+                        }
+                        else if (newDays.length > diffDays) {
+                            return newDays.slice(0, diffDays);
+                        }
+                        return prevDays;
+                    });
+                }, 0);
+            }
+        }
+    }, [currentItinerary.start_date, currentItinerary.end_date]);
+    const handleAddActivity = (dayId: string) => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                const newActivity: Itinerary_locations = {
+                    id: `temp-loc-${Date.now()}`,
+                    day_id: day.id,
+                    location_id: "",
+                    sequence_order: (day.locations?.length || 0) + 1,
+                    activity_note: "",
+                    cost: 0,
+                    start_time: "08:00",
+                    end_time: "10:00",
+                    location_name: ""
+                };
+
+                return {
+                    ...day,
+                    locations: [...(day.locations || []), newActivity]
+                };
+            }
+            return day;
+        }));
+    };
+    const handleRemoveActivity = (dayId: string, activityId: string) => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                return {
+                    ...day,
+                    locations: day.locations.filter((loc: Itinerary_locations) => loc.id !== activityId)
+                };
+            }
+            return day;
+        }));
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleUpdateActivity = (dayId: string, activityId: string, field: string, value: any) => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                return {
+                    ...day,
+                    locations: day.locations.map((loc: Itinerary_locations) => {
+                        if (loc.id === activityId) {
+                            return { ...loc, [field]: value };
+                        }
+                        return loc;
+                    })
+                };
+            }
+            return day;
+        }));
+    };
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        setActiveDragLoc(active.data.current?.location);
     };
 
+    const handleDragEnd = (event: DragEndEvent) => {
+        setActiveDragLoc(null);
+        const { active, over } = event;
+
+        if (!over) return;
+
+        const draggedLocation = active.data.current?.location;
+        const dropData = over.data.current;
+
+        if (dropData?.type === 'existing-activity') {
+            handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_id', draggedLocation.id);
+            handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_name', draggedLocation.name);
+            toast.success(`Đã thêm địa điểm ${draggedLocation.name}`);
+
+        } else if (dropData?.type === 'new-activity') {
+            setDays(prevDays => prevDays.map(day => {
+                if (day.id === dropData.dayId) {
+                    const newActivity: Itinerary_locations = {
+                        id: `activity-${Date.now()}`,
+                        day_id: day.id,
+                        location_id: draggedLocation.id,
+                        location_name: draggedLocation.name,
+                        start_time: "08:00",
+                        end_time: "10:00",
+                        cost: 0,
+                        sequence_order: 0,
+                        activity_note: ""
+                    };
+
+                    return { ...day, locations: [...(day.locations || []), newActivity] };
+                }
+                return day;
+            }));
+            toast.success(`Đã tạo hoạt động tại ${draggedLocation.name}`);
+        }
+    };
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
@@ -53,154 +285,236 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                     </button>
                 </div>
             </header>
+            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden h-[calc(100vh-80px)]">
 
-            <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden h-[calc(100vh-80px)]">
+                    <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
+                        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                            <input
+                                type="text"
+                                value={currentItinerary.title}
+                                onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
+                                placeholder="Nhập tên lộ trình hấp dẫn (VD: Chinh phục Fansipan 2N1Đ...)"
+                                className="w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                            />
+                            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                        Ngày khởi hành
+                                    </label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none z-10" />
 
-                <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
+                                        <input
+                                            type="date"
+                                            min={today}
+                                            value={currentItinerary.start_date}
+                                            onChange={(e) => setCurrentItinerary({ ...currentItinerary, start_date: e.target.value })}
+                                            onClick={(e) => {
+                                                if ('showPicker' in HTMLInputElement.prototype) {
+                                                    e.currentTarget.showPicker();
+                                                }
+                                            }}
 
-                    {/* KHỐI NHẬP THÔNG TIN TỔNG QUAN LỘ TRÌNH */}
-                    <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                        <input
-                            type="text"
-                            value={currentItinerary.title}
-                            onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
-                            placeholder="Nhập tên lộ trình hấp dẫn (VD: Chinh phục Fansipan 2N1Đ...)"
-                            className="w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
-                        />
-                        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="mb-1.5 flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                    <Calendar className="mr-2 h-4 w-4" /> Ngày khởi hành
-                                </label>
-                                <input type="date" value={currentItinerary.startDate} onChange={(e) => setCurrentItinerary({ ...currentItinerary, startDate: e.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                    <Calendar className="mr-2 h-4 w-4" /> Ngày kết thúc
-                                </label>
-                                <input type="date" value={currentItinerary.endDate} onChange={(e) => setCurrentItinerary({ ...currentItinerary, endDate: e.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                    <MapPin className="mr-2 h-4 w-4" /> Chủ đề
-                                </label>
-                                <select value={currentItinerary.theme} onChange={(e) => setCurrentItinerary({ ...currentItinerary, theme: e.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-                                    <option value="">Chọn chủ đề...</option>
-                                    <option value="Trekking & Khám phá">Trekking & Khám phá</option>
-                                    <option value="Nghỉ dưỡng">Nghỉ dưỡng</option>
-                                    <option value="Văn hóa - Lịch sử">Văn hóa - Lịch sử</option>
-                                    <option value="Ẩm thực">Ẩm thực</option>
-                                </select>
+                                            className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                        Ngày kết thúc
+                                    </label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none z-10" />
+
+                                        <input
+                                            type="date"
+                                            value={currentItinerary.end_date}
+                                            onChange={(e) => setCurrentItinerary({ ...currentItinerary, end_date: e.target.value })}
+                                            min={currentItinerary.start_date || today}
+                                            onClick={(e) => {
+                                                if ('showPicker' in HTMLInputElement.prototype) {
+                                                    e.currentTarget.showPicker();
+                                                }
+                                            }}
+
+                                            className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                        <MapPin className="mr-2 h-4 w-4" /> Chủ đề
+                                    </label>
+                                    <select value={currentItinerary.theme} onChange={(e) => setCurrentItinerary({ ...currentItinerary, theme: e.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                                        <option value="">Chọn chủ đề...</option>
+                                        <option value="Trekking & Khám phá">Trekking & Khám phá</option>
+                                        <option value="Nghỉ dưỡng">Nghỉ dưỡng</option>
+                                        <option value="Văn hóa - Lịch sử">Văn hóa - Lịch sử</option>
+                                        <option value="Ẩm thực">Ẩm thực</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="space-y-6">
-                        {days.length > 0 ? days.map((day) => (
-                            <motion.div key={day.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-800/50 rounded-t-2xl">
+                        <div className="space-y-6">
+                            {days.length > 0 ? days.map((day) => (
+                                <motion.div key={day.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">                              <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-800/50">
                                     <div className="flex items-center gap-3 w-full">
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-sm font-bold text-white dark:bg-white dark:text-gray-900">{day.dayNumber}</div>
-                                        <input type="text" defaultValue={day.title} className="w-full border-none bg-transparent font-bold text-gray-900 focus:ring-0 dark:text-white" />
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-sm font-bold text-white dark:bg-white dark:text-gray-900">{day.day_number}</div>
+                                        <input type="text" defaultValue={day.title} className="w-full border-none bg-transparent font-bold text-gray-900 focus:ring-0 dark:text-white outline-none" />
                                     </div>
-                                    <button className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"><Trash2 className="h-4 w-4" /></button>
                                 </div>
+                                    <div className="p-4 space-y-4">
+                                        {day.locations?.map((loc: Itinerary_locations) => (
+                                            <div key={loc.id} className="group relative flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50 hover:border-brand-300 transition-colors">
+                                                <button
+                                                    onClick={() => handleRemoveActivity(day.id, loc.id)}
+                                                    className="absolute right-3 top-3 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all dark:hover:bg-red-900/30"
+                                                    title="Xóa hoạt động này"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
 
-                                <div className="p-4">
-                                    <button className="flex w-full items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 py-3 text-sm font-medium text-gray-500 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600">
-                                        <Plus className="mr-2 h-4 w-4" /> Thêm hoạt động
-                                    </button>
+                                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                                    <div className="lg:col-span-5">
+                                                        <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Địa điểm</label>
+                                                        {loc.location_id ? (
+                                                            <div className="flex items-center justify-between rounded-lg border border-brand-200 bg-brand-50 p-2 text-sm dark:border-brand-900/50 dark:bg-brand-900/20 h-[42px]">
+                                                                <div className="flex items-center gap-2 truncate">
+                                                                    <MapPin className="h-4 w-4 text-brand-500 shrink-0" />
+                                                                    <span className="font-medium text-brand-700 dark:text-brand-400 truncate" title={loc.location_name}>
+
+                                                                        {loc.location_name}
+
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        handleUpdateActivity(day.id, loc.id, 'location_id', "");
+                                                                        handleUpdateActivity(day.id, loc.id, 'location_name', "");
+                                                                    }}
+                                                                    className="text-xs text-gray-400 hover:text-red-500 px-2 shrink-0 transition-colors"
+                                                                >
+                                                                    Gỡ
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="lg:col-span-5">
+                                                                <DroppableActivityZone
+                                                                    dayId={day.id}
+                                                                    loc={loc}
+                                                                    onUpdate={handleUpdateActivity}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="lg:col-span-4 flex gap-2">
+                                                        <div className="flex-1">
+                                                            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Từ</label>
+                                                            <input
+                                                                type="time"
+                                                                value={loc.start_time}
+                                                                onChange={(e) => handleUpdateActivity(day.id, loc.id, 'start_time', e.target.value)}
+                                                                className="w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white h-[42px] [color-scheme:light_dark]"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Đến</label>
+                                                            <input
+                                                                type="time"
+                                                                value={loc.end_time}
+                                                                onChange={(e) => handleUpdateActivity(day.id, loc.id, 'end_time', e.target.value)}
+                                                                className="w-full rounded-lg border border-gray-200 bg-white p-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white h-[42px] [color-scheme:light_dark]"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="lg:col-span-3">
+                                                        <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Chi phí (VNĐ)</label>
+                                                        <div className="relative">
+                                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                                                            <input
+                                                                type="number"
+                                                                placeholder="0"
+                                                                value={loc.cost || ''}
+                                                                onChange={(e) => handleUpdateActivity(day.id, loc.id, 'cost', Number(e.target.value))}
+                                                                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-3 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white h-[42px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Ghi chú (VD: Lên đồ đẹp chụp hình, vé vào cổng mua trước...)"
+                                                        value={loc.activity_note}
+                                                        onChange={(e) => handleUpdateActivity(day.id, loc.id, 'activity_note', e.target.value)}
+                                                        className="w-full rounded-lg border border-transparent bg-transparent p-2 text-sm text-gray-700 placeholder-gray-400 hover:border-gray-200 hover:bg-white focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 outline-none transition-all dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-900 dark:focus:bg-gray-900"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div className="p-4">
+                                            <DroppableAddButton dayId={day.id} onAdd={() => handleAddActivity(day.id)} />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )) : (
+                                <div className="py-12 text-center text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl bg-white/50 dark:bg-gray-900/50">
+                                    Chưa có lịch trình ngày nào. Nhập ngày khởi hành và kết thúc để bắt đầu
                                 </div>
-                            </motion.div>
-                        )) : (
-                            <div className="py-12 text-center text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl bg-white/50 dark:bg-gray-900/50">
-                                Chưa có lịch trình ngày nào. Bấm &quot;Thêm ngày mới&quot; để bắt đầu.
-                            </div>
-                        )}
-
-                        <button className="mx-auto flex items-center justify-center rounded-full bg-gray-900 px-6 py-3 font-semibold text-white shadow-lg transition-transform hover:scale-105 hover:bg-gray-800 dark:bg-white dark:text-gray-900 mt-6">
-                            <Plus className="mr-2 h-5 w-5" /> Thêm Ngày Mới
-                        </button>
-                    </div>
-                </div>
-
-                <div className="col-span-1 xl:col-span-4 border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex flex-col h-full">
-                    <div className="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-2">Kho Địa Điểm</h3>
-                        <p className="text-xs text-gray-500 mb-4 flex items-center gap-1.5">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                            {selectedProvinces.length > 0
-                                ? `Đang gợi ý các điểm tại ${selectedProvinces.map(p => p.name).join(", ")}`
-                                : "Đang hiển thị tất cả địa điểm"}
-                        </p>
-
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <input type="text" placeholder="Tìm tên địa điểm..." className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white shadow-sm" />
-                            </div>
-                            <button className="rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 shadow-sm">
-                                <Filter className="h-4 w-4" />
-                            </button>
+                            )}
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar pb-32">
-                        {/* 🛠️ [NOTE CHO DEV]: Fetch Locations Pool dựa trên selectedProvinces và map tại đây */}
-                        {(() => {
-                            return locations.length > 0 ? (
-                                locations.map((loc) => (
-                                    <div
-                                        key={loc.id}
-                                        className="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition-all hover:border-brand-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-700"
-                                    >
+                    <div className="col-span-1 xl:col-span-4 border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex flex-col h-full">
+                        <div className="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Kho Địa Điểm</h3>
+                            <p className="text-xs text-gray-500 mb-4 flex items-center gap-1.5">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                                {selectedProvinces.length > 0
+                                    ? `Đang gợi ý các điểm tại ${selectedProvinces.map(p => p.name).join(", ")}`
+                                    : "Đang hiển thị tất cả địa điểm"}
+                            </p>
 
-                                        {/* Ảnh Thumbnail */}
-                                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={loc.img} alt={loc.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                        </div>
-
-                                        {/* Nội dung thông tin */}
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="truncate text-sm font-bold text-gray-900 transition-colors group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">
-                                                {loc.name}
-                                            </h4>
-
-                                            <div className="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                                                <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-
-                                                {/* Đổi màu text linh hoạt theo mức độ khó */}
-                                                <span className={
-                                                    loc.difficulty_level === 'Khó' ? 'text-red-500 font-medium' :
-                                                        loc.difficulty_level === 'Trung bình' ? 'text-orange-500 font-medium' :
-                                                            'text-green-500 font-medium'
-                                                }>
-                                                    {loc.difficulty_level}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Nút Thêm (Chỉ hiện ra khi Hover chuột vào thẻ) */}
-                                        <button
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 text-gray-400 opacity-0 transition-all hover:bg-brand-100 hover:text-brand-600 group-hover:opacity-100 dark:bg-gray-800 dark:hover:bg-brand-900/50 dark:hover:text-brand-400"
-                                            title="Thêm vào lộ trình"
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                        </button>
-
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="py-12 text-center text-sm text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
-                                    Không tìm thấy địa điểm phù hợp.
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <input type="text" placeholder="Tìm tên địa điểm..." className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white shadow-sm" />
                                 </div>
-                            );
-                        })()}
-                    </div>
-                </div>
+                                <button className="rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 shadow-sm">
+                                    <Filter className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
 
-            </main>
+                        <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar pb-32">
+                            {(() => {
+                                return locations.length > 0 ? (
+                                    locations.map((loc) => (
+                                        <DraggableLocationCard key={loc.id} loc={loc} />
+                                    ))
+                                ) : (
+                                    <div className="py-12 text-center text-sm text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
+                                        Không tìm thấy địa điểm phù hợp.
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                </main>
+                <DragOverlay dropAnimation={{ duration: 250, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+                    {activeDragLoc ? (
+                        <div className="w-[300px] opacity-90 scale-105 shadow-2xl rotate-2">
+                            <DraggableLocationCard loc={activeDragLoc} />
+                        </div>
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
         </div>
     )
 }

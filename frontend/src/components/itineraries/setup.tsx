@@ -174,12 +174,19 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                     </div>
                 )}
                 <button
+                    disabled={selectedProvinces.length === 0}
                     onClick={() => {
                         setStep("BUILDER");
                         const idsToFetch = selectedProvinces.map(p => p.id);
                         fetchAllSelectedLocations(idsToFetch);
                     }}
-                    className="w-full md:w-auto shrink-0 bg-brand-600 hover:bg-brand-700 text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-brand-500/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                    className={`
+        w-full md:w-auto shrink-0 px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all
+        ${selectedProvinces.length === 0
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600"
+                            : "bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95"
+                        }
+    `}
                 >
                     Tạo Lộ Trình <ChevronRight className="h-5 w-5" />
                 </button>
@@ -208,8 +215,8 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                     setCurrentItinerary({
                                         title: tpl.title || "",
                                         theme: tpl.theme || "",
-                                        startDate: "",
-                                        endDate: ""
+                                        start_date: "",
+                                        end_date: ""
                                     });
                                     // 🛠️ [NOTE CHO DEV]: Gọi API lấy chi tiết days của tpl.id rồi gán vào setDays() tại đây
                                     setStep("BUILDER");

@@ -1,15 +1,19 @@
 "use client";
 import { useState } from "react";
 
-import { Location } from "@/interface";
+import { Itinerary, Location } from "@/interface";
 import { SetupScreen } from "@/components/itineraries/setup";
 import { BuilderScreen } from "@/components/itineraries/builder";
 
 export default function ItineraryBuilderPage() {
     const [step, setStep] = useState<"SETUP" | "BUILDER">("SETUP");
     const [selectedProvinces, setSelectedProvinces] = useState<{ id: string, name: string }[]>([]);
-    const [currentItinerary, setCurrentItinerary] = useState({
-        title: "", startDate: "", endDate: "", theme: ""
+    const [currentItinerary, setCurrentItinerary] = useState<Partial<Itinerary>>({
+        title: "",
+        start_date: "",
+        end_date: "",
+        theme: "",
+        estimated_cost: 0
     });
     const [locations, setLocations] = useState<Location[]>([]);
     if (step === "SETUP") {

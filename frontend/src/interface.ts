@@ -117,12 +117,7 @@ export interface SetupScreenProp {
     }[]>>,
     setLocations: Dispatch<SetStateAction<Location[]>>,
     setStep: Dispatch<SetStateAction<"BUILDER" | "SETUP">>,
-    setCurrentItinerary: Dispatch<SetStateAction<{
-        title: string;
-        startDate: string;
-        endDate: string;
-        theme: string;
-    }>>,
+    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary>>>,
     step: "BUILDER" | "SETUP"
 }
 
@@ -132,17 +127,28 @@ export interface BuilderScreenProp {
         id: string;
         name: string;
     }[],
-    currentItinerary: {
-        title: string;
-        startDate: string;
-        endDate: string;
-        theme: string;
-    },
-    setCurrentItinerary: Dispatch<SetStateAction<{
-        title: string;
-        startDate: string;
-        endDate: string;
-        theme: string;
-    }>>,
+    currentItinerary: Partial<Itinerary>,
+    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary>>>,
     locations: Location[]
+}
+
+export interface Itinerary_days {
+    id: string;
+    itinerary_id?: string;
+    day_number: number;
+    title: string;
+    create_at?: string;
+    locations: Itinerary_locations[]
+}
+
+export interface Itinerary_locations {
+    id: string;
+    day_id: string;
+    location_id: string | null;
+    sequence_order: number;
+    activity_note: string;
+    cost: number;
+    start_time: string;
+    end_time: string;
+    location_name: string
 }
