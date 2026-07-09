@@ -125,3 +125,24 @@ export interface SetupScreenProp {
     }>>,
     step: "BUILDER" | "SETUP"
 }
+
+export interface BuilderScreenProp {
+    setStep: Dispatch<SetStateAction<"BUILDER" | "SETUP">>,
+    selectedProvinces: {
+        id: string;
+        name: string;
+    }[],
+    currentItinerary: {
+        title: string;
+        startDate: string;
+        endDate: string;
+        theme: string;
+    },
+    setCurrentItinerary: Dispatch<SetStateAction<{
+        title: string;
+        startDate: string;
+        endDate: string;
+        theme: string;
+    }>>,
+    locations: Location[]
+}
