@@ -89,10 +89,12 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
 
     useEffect(() => {
         setTimeout(() => {
-            fetchProvinces();
-            fetchItineraryData();
+            if (step === "SETUP") {
+                fetchProvinces();
+                fetchItineraryData();
+            }
         }, 0);
-    }, []);
+    }, [step]);
 
     const handleSelectProvince = (province: { id: string, name: string }) => {
         if (!selectedProvinces.find(p => p.id === province.id)) {
@@ -211,14 +213,12 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                             <div
                                 key={tpl.id}
                                 onClick={() => {
-                                    // Điền dữ liệu từ template vào form đang soạn và chuyển trang
                                     setCurrentItinerary({
                                         title: tpl.title || "",
                                         theme: tpl.theme || "",
                                         start_date: "",
                                         end_date: ""
                                     });
-                                    // 🛠️ [NOTE CHO DEV]: Gọi API lấy chi tiết days của tpl.id rồi gán vào setDays() tại đây
                                     setStep("BUILDER");
                                 }}
                                 className="group cursor-pointer bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 hover:border-brand-300 dark:hover:border-brand-700 flex flex-row h-32 sm:h-36"

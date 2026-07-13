@@ -6,23 +6,18 @@ class ItineraryRepository extends BaseRepository {
         super('itineraries');
     }
     create = async (payload) => {
-        const { data, error } = await supabase
-            .from('itineraries')
-            .insert(payload)
-            .select()
-            .single();
+        const { data, error } = await supabase.rpc('create_full_itinerary', {
+            payload: payload
+        });
 
-        if (error) throw error;
-        const daysToInsert = Array.from({ length: payload.days }, (_, i) => ({
-            itinerary_id: data.id,
-            day_number: i + 1,
-            title: `Ngày ${i + 1}`
-        }));
+        if (error) {
+            console.error("Lỗi khi tạo Itinerary qua RPC:", error);
+            throw error;
+        }
 
-        const { data: itineraryDaysData, error: itineraryDaysError } = await supabase.from('itinerary_days').insert(daysToInsert);
-        if (itineraryDaysError) throw itineraryDaysError;
-        return { ...data };
+        return data;
     }
+
     getById = async (id) => {
         const { data, error } = await supabase
             .from('itineraries')
@@ -47,8 +42,13 @@ class ItineraryRepository extends BaseRepository {
                 )`)
             .eq('id', id)
             .single();
-        if (error) throw new Error;
-        return { data }
+
+        if (error) {
+            console.error("Lỗi khi lấy Itinerary:", error);
+            throw error;
+        }
+
+        return { data };
     }
 }
 

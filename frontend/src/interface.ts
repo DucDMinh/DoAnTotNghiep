@@ -104,6 +104,7 @@ export interface Itinerary {
     nights?: number;
     estimated_cost: number;
     image_url?: string | undefined;
+    itinerary_days: Itinerary_days[];
 }
 
 export interface SetupScreenProp {
@@ -117,7 +118,7 @@ export interface SetupScreenProp {
     }[]>>,
     setLocations: Dispatch<SetStateAction<Location[]>>,
     setStep: Dispatch<SetStateAction<"BUILDER" | "SETUP">>,
-    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary>>>,
+    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary> | undefined>>,
     step: "BUILDER" | "SETUP"
 }
 
@@ -127,8 +128,8 @@ export interface BuilderScreenProp {
         id: string;
         name: string;
     }[],
-    currentItinerary: Partial<Itinerary>,
-    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary>>>,
+    currentItinerary: Partial<Itinerary> | undefined,
+    setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary> | undefined>>,
     locations: Location[]
 }
 
@@ -138,7 +139,7 @@ export interface Itinerary_days {
     day_number: number;
     title: string;
     create_at?: string;
-    locations: Itinerary_locations[]
+    itinerary_locations: Itinerary_locations[]
 }
 
 export interface Itinerary_locations {

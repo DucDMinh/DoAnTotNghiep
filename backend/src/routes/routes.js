@@ -23,17 +23,4 @@ router.get('/itineraries', itineraryController.getAllItineraries);
 router.get('/itineraries/:id', itineraryController.getItineraryById);
 router.put('/itineraries/:id', upload.single('image'), itineraryController.updateItinerary);
 router.delete('/itineraries/:id', itineraryController.deleteItinerary);
-
-router.get('/itinerary-days', itineraryController.getAllItineraryDays);
-router.get('/itinerary-days/:id', itineraryController.getItineraryDayById);
-router.post('/itinerary-days', itineraryController.createItineraryDay);
-router.put('/itinerary-days/:id', itineraryController.updateItineraryDay);
-router.delete('/itinerary-days/:id', itineraryController.deleteItineraryDay);
-
-router.get('/itinerary-locations', itineraryController.getAllItineraryLocations);
-router.get('/itinerary-locations/:id', itineraryController.getItineraryLocationById);
-router.post('/itinerary-locations', itineraryController.createItineraryLocation);
-router.put('/itinerary-locations/:id', itineraryController.updateItineraryLocation);
-router.delete('/itinerary-locations/:id', itineraryController.deleteItineraryLocation);
-
 export default router;

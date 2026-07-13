@@ -8,13 +8,7 @@ import { BuilderScreen } from "@/components/itineraries/builder";
 export default function ItineraryBuilderPage() {
     const [step, setStep] = useState<"SETUP" | "BUILDER">("SETUP");
     const [selectedProvinces, setSelectedProvinces] = useState<{ id: string, name: string }[]>([]);
-    const [currentItinerary, setCurrentItinerary] = useState<Partial<Itinerary>>({
-        title: "",
-        start_date: "",
-        end_date: "",
-        theme: "",
-        estimated_cost: 0
-    });
+    const [currentItinerary, setCurrentItinerary] = useState<Partial<Itinerary>>();
     const [locations, setLocations] = useState<Location[]>([]);
     if (step === "SETUP") {
         return (
