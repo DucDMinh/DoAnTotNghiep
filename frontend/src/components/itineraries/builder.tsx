@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { Compass } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
+import Switch from '@mui/material/Switch';
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
     ssr: false,
@@ -308,6 +309,10 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         }
     };
 
+    useEffect(() => {
+        console.log(currentItinerary)
+    }, [currentItinerary])
+
     const handleAddItinerary = async () => {
         const submitData = new FormData();
         if (currentItinerary?.title) submitData.append('title', currentItinerary.title);
@@ -319,6 +324,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         if (currentItinerary?.image_url) submitData.append('image_url', currentItinerary.image_url);
         submitData.append('estimated_cost', String(calculateTotalCost()));
         if (currentItinerary?.end_date) submitData.append('end_date', currentItinerary.end_date);
+        submitData.append('share', String(currentItinerary?.share ?? false));
         if (days && days.length > 0) {
             submitData.append('itinerary_days', JSON.stringify(days));
         }
@@ -342,6 +348,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             toast.error("Có lỗi xảy ra khi lưu!", { id: toastId });
         }
     }
+    const label = { slotProps: { input: { 'aria-label': 'Switch demo' } } };
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
@@ -389,13 +396,26 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
 
                     <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
                         <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                            <input
-                                type="text"
-                                value={currentItinerary?.title || ''}
-                                onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
-                                placeholder="Nhập tên lộ trình"
-                                className="w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
-                            />
+                            <div className="flex items-center justify-between gap-4">
+                                <input
+                                    type="text"
+                                    value={currentItinerary?.title || ''}
+                                    onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
+                                    placeholder="Nhập tên lộ trình"
+                                    className="flex-1 w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                                />
+                                <div className="flex items-center gap-3 shrink-0">
+                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                                        {currentItinerary?.share ? 'Công khai' : 'Riêng tư'}
+                                    </span>
+                                    <Switch checked={currentItinerary?.share ?? false}
+                                        onChange={() => setCurrentItinerary({
+                                            ...currentItinerary,
+                                            share: !currentItinerary?.share
+                                        })}>
+                                    </Switch>
+                                </div>
+                            </div>
                             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label className="mb-1.5 block text-sm font-semibold text-gray-600 dark:text-gray-400">

@@ -155,7 +155,9 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                 filteredProvinces.map((province) => (
                                     <button
                                         key={province.id}
-                                        onClick={() => handleSelectProvince({ id: province.id, name: province.name })}
+                                        onClick={() => {
+                                            handleSelectProvince({ id: province.id, name: province.name })
+                                        }}
                                         className="w-full text-left px-4 py-3 flex items-center hover:bg-brand-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 font-medium transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-none focus:bg-brand-50 focus:outline-none"
                                     >
                                         <MapPin className="h-4 w-4 mr-2 text-gray-400" />
@@ -209,7 +211,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {templates.slice(0, visibleCount).map((tpl) => (
+                        {templates.filter((tpl) => tpl.share === true).slice(0, visibleCount).map((tpl) => (
                             <div
                                 key={tpl.id}
                                 onClick={async () => {

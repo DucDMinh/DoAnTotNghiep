@@ -18,6 +18,9 @@ class ItineraryController extends BaseController {
             }
             if (payload.nights) payload.nights = Number(payload.nights);
             if (payload.days) payload.days = Number(payload.days);
+            if (payload.share !== undefined) {
+                payload.share = payload.share === 'true';
+            }
             console.log(JSON.stringify(payload, null, 2));
             const data = await this.repository.create(payload);
 
