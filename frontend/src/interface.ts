@@ -104,7 +104,7 @@ export interface Itinerary {
     nights?: number;
     estimated_cost: number;
     image_url?: string | undefined;
-    itinerary_days: Itinerary_days[];
+    itinerary_days: Itinerary_days[] | null;
 }
 
 export interface SetupScreenProp {

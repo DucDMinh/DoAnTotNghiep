@@ -212,14 +212,35 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                         {templates.slice(0, visibleCount).map((tpl) => (
                             <div
                                 key={tpl.id}
-                                onClick={() => {
-                                    setCurrentItinerary({
-                                        title: tpl.title || "",
-                                        theme: tpl.theme || "",
-                                        start_date: "",
-                                        end_date: ""
-                                    });
-                                    setStep("BUILDER");
+                                onClick={async () => {
+                                    const toastId = toast.loading("Đang tải dữ liệu lộ trình...");
+                                    try {
+                                        const response = await fetch(`http://localhost:8000/itineraries/${tpl.id}`);
+                                        const result = await response.json();
+
+                                        if (result.success && result.data) {
+                                            const data = result.data.data;
+                                            setCurrentItinerary({
+                                                id: data.id,
+                                                title: data.title || "",
+                                                theme: data.theme || "",
+                                                summary: data.summary || "",
+                                                start_date: data.start_date || "",
+                                                end_date: data.end_date || "",
+                                                image_url: data.image_url || "",
+                                                itinerary_days: data.itinerary_days || []
+                                            });
+
+                                            toast.success("Tải dữ liệu thành công!", { id: toastId });
+                                            console.log("tải thành công", data)
+                                            setStep("BUILDER"); // Chuyển trang
+                                        } else {
+                                            toast.error("Không tìm thấy dữ liệu chi tiết.", { id: toastId });
+                                        }
+                                    } catch (error) {
+                                        console.error("Lỗi khi tải chi tiết lộ trình:", error);
+                                        toast.error("Lỗi kết nối máy chủ.", { id: toastId });
+                                    }
                                 }}
                                 className="group cursor-pointer bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 hover:border-brand-300 dark:hover:border-brand-700 flex flex-row h-32 sm:h-36"
                             >

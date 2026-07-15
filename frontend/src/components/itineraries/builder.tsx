@@ -79,6 +79,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
+    const isDataLoaded = React.useRef(false);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const DroppableActivityZone = ({ dayId, loc, onUpdate }: { dayId: string, loc: any, onUpdate: any }) => {
@@ -137,26 +138,69 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
     };
     const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     React.useEffect(() => {
+        if (currentItinerary) console.log(currentItinerary)
+        if (currentItinerary?.itinerary_days && !isDataLoaded.current) {
+
+            // 🛠️ BƯỚC MAPPING: Chuyển đổi dữ liệu API cho khớp với Giao diện
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formattedDays = currentItinerary.itinerary_days.map((day: any) => {
+                const rawLocations = day.itinerary_locations || [];
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const formattedLocations = rawLocations.map((loc: any) => {
+                    // Nếu loc.locations tồn tại, nghĩa là nó là dữ liệu lồng nhau từ API
+                    if (loc.locations) {
+                        return {
+                            ...loc,
+                            // Kéo dữ liệu từ Object con (locations) ra ngoài thành thuộc tính ngang hàng
+                            location_id: loc.locations.id,
+                            location_name: loc.locations.name,
+                            lat: loc.locations.lat || 0, // Cứ dự phòng 0 nếu API thiếu
+                            lng: loc.locations.lng || 0
+                        };
+                    }
+
+                    // Nếu nó đã có sẵn location_name (trường hợp tự tạo mới từ giao diện) thì giữ nguyên
+                    return loc;
+                });
+
+                return {
+                    ...day,
+                    itinerary_locations: formattedLocations
+                };
+            });
+
+            setTimeout(() => {
+                setDays(formattedDays); // Ép vào State cái mảng đã được Mapping
+            }, 0);
+
+            isDataLoaded.current = true;
+            return;
+        }
         if (currentItinerary?.start_date && currentItinerary.end_date) {
             const start = new Date(currentItinerary.start_date);
             const end = new Date(currentItinerary.end_date);
+
             if (end >= start) {
                 const diffTime = end.getTime() - start.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
                 setTimeout(() => {
                     setDays(prevDays => {
                         const newDays = [...prevDays];
+                        // Nếu user kéo dài ngày -> thêm ngày mới
                         if (newDays.length < diffDays) {
                             for (let i = newDays.length + 1; i <= diffDays; i++) {
                                 newDays.push({
                                     id: uuidv4(),
                                     day_number: i,
                                     title: `Ngày ${i}`,
-                                    itinerary_locations: []
+                                    itinerary_locations: [] // Lưu ý đổi thành itinerary_locations nếu db của bạn dùng tên này
                                 });
                             }
                             return newDays;
                         }
+                        // Nếu user rút ngắn ngày -> cắt bỏ ngày thừa
                         else if (newDays.length > diffDays) {
                             return newDays.slice(0, diffDays);
                         }
@@ -165,7 +209,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                 }, 0);
             }
         }
-    }, [currentItinerary?.start_date, currentItinerary?.end_date]);
+    }, [currentItinerary?.start_date, currentItinerary?.end_date, currentItinerary?.itinerary_days]);
     const handleAddActivity = (dayId: string) => {
         setDays(prevDays => prevDays.map(day => {
             if (day.id === dayId) {
