@@ -151,5 +151,7 @@ export interface Itinerary_locations {
     cost: number;
     start_time: string;
     end_time: string;
-    location_name: string
+    location_name: string,
+    lat: number;
+    lng: number;
 }

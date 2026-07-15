@@ -178,7 +178,9 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                     cost: 0,
                     start_time: "08:00",
                     end_time: "10:00",
-                    location_name: ""
+                    location_name: "",
+                    lat: 0,
+                    lng: 0
                 };
 
                 return {
@@ -234,8 +236,9 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         if (dropData?.type === 'existing-activity') {
             handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_id', draggedLocation.id);
             handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_name', draggedLocation.name);
+            handleUpdateActivity(dropData.dayId, dropData.activityId, 'lat', draggedLocation.lat);
+            handleUpdateActivity(dropData.dayId, dropData.activityId, 'lng', draggedLocation.lng);
             toast.success(`Đã thêm địa điểm ${draggedLocation.name}`);
-
         } else if (dropData?.type === 'new-activity') {
             setDays(prevDays => prevDays.map(day => {
                 if (day.id === dropData.dayId) {
@@ -247,8 +250,10 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                         start_time: "08:00",
                         end_time: "10:00",
                         cost: 0,
-                        sequence_order: 0,
-                        activity_note: ""
+                        sequence_order: (day.itinerary_locations?.length || 0) + 1,
+                        activity_note: "",
+                        lat: draggedLocation.lat,
+                        lng: draggedLocation.lng
                     };
 
                     return { ...day, itinerary_locations: [...(day.itinerary_locations || []), newActivity] };
