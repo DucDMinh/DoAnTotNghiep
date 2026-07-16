@@ -105,17 +105,26 @@ export interface Itinerary {
     estimated_cost: number;
     image_url?: string | undefined;
     itinerary_days: Itinerary_days[] | null;
-    share?: boolean
+    share?: boolean;
+    itinerary_provinces: Itinerary_provinces[] | null
+}
+
+export interface Itinerary_provinces {
+    itinerary_id?: string;
+    province_id?: string;
+    provinces?: Province | null;
 }
 
 export interface SetupScreenProp {
     selectedProvinces: {
         id: string;
         name: string;
+        image_url: string
     }[],
     setSelectedProvinces: React.Dispatch<React.SetStateAction<{
         id: string;
         name: string;
+        image_url: string;
     }[]>>,
     setLocations: Dispatch<SetStateAction<Location[]>>,
     setStep: Dispatch<SetStateAction<"BUILDER" | "SETUP">>,
@@ -128,6 +137,7 @@ export interface BuilderScreenProp {
     selectedProvinces: {
         id: string;
         name: string;
+        image_url: string;
     }[],
     currentItinerary: Partial<Itinerary> | undefined,
     setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary> | undefined>>,

@@ -328,6 +328,17 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         if (days && days.length > 0) {
             submitData.append('itinerary_days', JSON.stringify(days));
         }
+        let finalImageUrl = currentItinerary?.image_url;
+        if (!finalImageUrl && selectedProvinces && selectedProvinces.length > 0) {
+            finalImageUrl = selectedProvinces[0].image_url;
+        }
+        if (finalImageUrl) {
+            submitData.append('image_url', finalImageUrl);
+        }
+        const provinceIds = selectedProvinces.map(p => p.id);
+        provinceIds.forEach(id => {
+            submitData.append('province_id', id);
+        });
 
         const toastId = toast.loading("Đang lưu lộ trình...");
         try {
@@ -348,7 +359,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             toast.error("Có lỗi xảy ra khi lưu!", { id: toastId });
         }
     }
-    const label = { slotProps: { input: { 'aria-label': 'Switch demo' } } };
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">

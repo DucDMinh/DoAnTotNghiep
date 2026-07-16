@@ -96,7 +96,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
         }, 0);
     }, [step]);
 
-    const handleSelectProvince = (province: { id: string, name: string }) => {
+    const handleSelectProvince = (province: { id: string, name: string, image_url: string | "" }) => {
         if (!selectedProvinces.find(p => p.id === province.id)) {
             setSelectedProvinces([...selectedProvinces, province]);
         }
@@ -156,7 +156,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                     <button
                                         key={province.id}
                                         onClick={() => {
-                                            handleSelectProvince({ id: province.id, name: province.name })
+                                            handleSelectProvince({ id: province.id, name: province.name, image_url: province.image_url ?? "" })
                                         }}
                                         className="w-full text-left px-4 py-3 flex items-center hover:bg-brand-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 font-medium transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-none focus:bg-brand-50 focus:outline-none"
                                     >
