@@ -4,7 +4,7 @@ import {
     ArrowLeft, CheckCircle2, X
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
 import React from "react";
 import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
@@ -353,11 +353,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         setActiveDragLoc(active.data.current?.location);
     };
 
-    useEffect(() => {
-        console.log("currentItinerary", currentItinerary)
-        console.log("selectedProvinces", selectedProvinces)
-    }, [currentItinerary, selectedProvinces])
-
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveDragLoc(null);
         const { active, over } = event;
@@ -399,10 +394,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             toast.success(`Đã tạo hoạt động tại ${draggedLocation.name}`);
         }
     };
-
-    useEffect(() => {
-        console.log(currentItinerary)
-    }, [currentItinerary])
 
     const handleAddItinerary = async () => {
         const submitData = new FormData();
@@ -498,7 +489,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             </header>
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden h-[calc(100vh-80px)]">
-
                     <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
                         <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                             <div className="flex items-center justify-between gap-4">
