@@ -191,8 +191,6 @@ const DroppableActivityZone = ({
         </div>
     );
 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
 const DroppableAddButton = ({ dayId, onAdd }: { dayId: string, onAdd: () => void }) => {
     const { isOver, setNodeRef } = useDroppable({
         id: `drop-new-${dayId}`,
@@ -220,9 +218,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
     const isDataLoaded = React.useRef(false);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
 
     const calculateTotalCost = () => {
         return days.reduce((total, day) => {
@@ -295,6 +290,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                 }, 0);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentItinerary?.start_date, currentItinerary?.end_date, currentItinerary?.itinerary_days]);
     const handleAddActivity = (dayId: string) => {
         setDays(prevDays => prevDays.map(day => {
