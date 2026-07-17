@@ -76,12 +76,28 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
             const response = await fetch(`http://localhost:8000/itineraries`);
             const result = await response.json();
 
-            if (result.success && result.data) {
-                setTemplates(result.data); // Gán vào biến templates thay vì itinerary
+            console.log("Dữ liệu Itineraries trả về:", result);
+
+            if (result.success && Array.isArray(result.data)) {
+                setTemplates(result.data);
+            }
+            else if (result.success && result.data && Array.isArray(result.data.data)) {
+                setTemplates(result.data.data);
+            }
+            else if (Array.isArray(result)) {
+                setTemplates(result);
+            }
+            else if (result.data && Array.isArray(result.data)) {
+                setTemplates(result.data);
+            }
+            else {
+                console.error("Dữ liệu trả về không phải là mảng:", result);
+                setTemplates([]);
             }
         } catch (error) {
             console.error("Error fetching itinerary data:", error);
             toast.error("Không thể tải dữ liệu lộ trình mẫu.");
+            setTemplates([]);
         } finally {
             setIsLoading(false);
         }
@@ -283,21 +299,26 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                         </h3>
                                         <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1.5 truncate">
                                             <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                            Lộ trình mẫu
+                                            <span className="truncate" title={tpl.itinerary_provinces?.map(p => p.provinces?.name).filter(Boolean).join(', ')}>
+                                                {tpl.itinerary_provinces && tpl.itinerary_provinces.length > 0
+                                                    ? tpl.itinerary_provinces.map(p => p.provinces?.name).filter(Boolean).join(', ')
+                                                    : "Chưa xác định điểm đến"}
+                                            </span>
                                         </p>
                                     </div>
 
                                     <div className="mt-2 flex items-center justify-between border-t border-gray-50 dark:border-gray-800 pt-2">
-                                        <span className="text-gray-500 dark:text-gray-400 text-xs font-medium hidden sm:inline">Chi phí dự kiến:</span>
-                                        <span className="text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-md text-sm ml-auto">
-                                            {tpl.estimated_cost?.toLocaleString('vi-VN')}đ
+                                        <span className="text-gray-600 dark:text-gray-300 text-xs font-semibold bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
+                                            {tpl.days || 0} ngày {tpl.nights || 0} đêm
                                         </span>
+                                        <div className="flex items-center justify-between gap-3 text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-md text-sm">
+                                            <span>Dự kiến:</span>
+                                            <span>{tpl.estimated_cost?.toLocaleString('vi-VN')}đ</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
-
-                        {/* Điểm neo cho Infinite Scroll */}
                         {visibleCount < templates.length && (
                             <div ref={loaderRef} className="py-6 flex justify-center items-center w-full">
                                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 animate-pulse font-medium">

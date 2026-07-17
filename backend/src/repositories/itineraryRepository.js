@@ -65,6 +65,25 @@ class ItineraryRepository extends BaseRepository {
 
         return { data };
     }
+    getAll = async () => {
+        const { data, error } = await supabase
+            .from('itineraries')
+            .select(`
+            *,
+            itinerary_provinces (
+                province_id,
+                provinces (
+                    id,
+                    name
+                )
+            )
+        `);
+        if (error) {
+            console.error("Lỗi khi lấy Itinerary:", error);
+            throw error;
+        }
+        return { data };
+    }
 }
 
 export const itineraryRepo = new ItineraryRepository();
