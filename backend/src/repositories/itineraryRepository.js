@@ -29,6 +29,10 @@ class ItineraryRepository extends BaseRepository {
         title,
         itinerary_locations (
             id, 
+            location_id,      
+            location_name,    
+            lat,              
+            lng,              
             sequence_order, 
             start_time, 
             end_time, 

@@ -22,6 +22,8 @@ export default function ItineraryBuilderPage() {
             />
         );
     }
+
+
     return (
         <BuilderScreen
             setStep={setStep}
@@ -29,6 +31,7 @@ export default function ItineraryBuilderPage() {
             currentItinerary={currentItinerary}
             setCurrentItinerary={setCurrentItinerary}
             locations={locations}
+            setSelectedProvinces={setSelectedProvinces}
         />
     );
 }

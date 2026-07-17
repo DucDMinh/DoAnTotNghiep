@@ -4,7 +4,7 @@ import {
     ArrowLeft, CheckCircle2, X
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
 import React from "react";
 import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
@@ -52,6 +52,145 @@ const DraggableLocationCard = ({ loc }: { loc: any }) => {
         </div>
     );
 };
+const DroppableActivityZone = ({
+    dayId,
+    loc,
+    onUpdate,
+    onOpenMap
+}: {
+    dayId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    loc: any, onUpdate: any,
+    onOpenMap: (dayId: string, locId: string) => void
+}) => {
+    const { isOver, setNodeRef } = useDroppable({
+        id: `drop-activity-${dayId}-${loc.id}`,
+        data: { type: 'existing-activity', dayId, activityId: loc.id }
+    });
+
+
+    // Thêm 1 state nhỏ để hiện loading xoay xoay lúc đang tìm tọa độ
+    const [isSearchingLoc, setIsSearchingLoc] = useState(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`relative flex items-center rounded-lg border bg-white transition-all overflow-hidden h-[42px] ${isOver
+                ? 'border-brand-500 bg-brand-50 shadow-md ring-2 ring-brand-500/20 dark:bg-brand-900/30'
+                : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800'
+                }`}
+        >
+            <input
+                type="text"
+                placeholder={
+                    isOver
+                        ? "✨ Thả địa điểm vào đây..."
+                        : "Gõ tên, kéo thả, hoặc chọn Map..."
+                }
+                value={loc.location_name || ''}
+                onChange={(e) => {
+                    const newValue = e.target.value;
+
+                    // Nếu địa điểm đã có ID (được chọn từ gợi ý/ map), xóa ID để biến thành "tự do"
+                    if (loc.location_id) {
+                        onUpdate(dayId, loc.id, {
+                            location_name: newValue,
+                            location_id: "", // xóa liên kết cũ
+                        });
+                    } else {
+                        // Địa điểm tự do, cập nhật tên giữ nguyên tọa độ cũ (sẽ tìm lại ở onBlur)
+                        onUpdate(dayId, loc.id, { location_name: newValue });
+                    }
+                }}
+                onBlur={async (e) => {
+                    const typedName = e.target.value.trim();
+                    if (!typedName) return;
+                    if (isSearchingLoc) return; // đang tải thì không gọi lại
+
+                    // Hủy request cũ nếu có
+                    if (abortControllerRef.current) {
+                        abortControllerRef.current.abort();
+                    }
+                    const controller = new AbortController();
+                    abortControllerRef.current = controller;
+
+                    try {
+                        setIsSearchingLoc(true);
+
+                        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+                            typedName
+                        )}&format=json&limit=1&countrycodes=vn&accept-language=vi`;
+
+                        const res = await fetch(url, {
+                            headers: {
+                                'User-Agent': 'MyTravelApp/1.0 (daod1278@example.com)', // THAY BẰNG TÊN & EMAIL THẬT CỦA BẠN
+                            },
+                            signal: controller.signal,
+                        });
+
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        const data = await res.json();
+
+                        if (Array.isArray(data) && data.length > 0) {
+                            const { lat, lon, display_name } = data[0];
+                            onUpdate(dayId, loc.id, {
+                                lat: parseFloat(lat),
+                                lng: parseFloat(lon),
+                                location_name: typedName,
+                                display_name,
+                            });
+
+                            toast.success(
+                                `Đã ghim: ${display_name.split(',').slice(0, 3).join(',')}`
+                            );
+                        } else {
+                            onUpdate(dayId, loc.id, {
+                                lat: null,
+                                lng: null,
+                                location_name: typedName,
+                            });
+
+                            toast.error(
+                                `Không tìm thấy "${typedName}". Vui lòng ghim lại trên Bản đồ!`,
+                                { duration: 4000, icon: '⚠️' }
+                            );
+                        }
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (err: any) {
+                        if (err.name === 'AbortError') return;
+                        console.error('Lỗi tìm tọa độ:', err);
+                        toast.error('Lỗi kết nối tới hệ thống bản đồ.');
+                    } finally {
+                        setIsSearchingLoc(false);
+                        abortControllerRef.current = null;
+                    }
+                }}
+                className={`flex-1 min-w-0 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-gray-400 dark:text-white ${isOver ? 'text-brand-600' : ''
+                    }`}
+            />
+
+            <div className="flex h-full items-center shrink-0">
+                {isSearchingLoc ? (
+                    <div className="flex h-full items-center px-3 border-l border-gray-100 dark:border-gray-700 bg-gray-50 text-brand-500">
+                        <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : loc.location_id ? (
+                    <div className="flex h-full items-center px-3 border-l border-gray-100 dark:border-gray-700 bg-green-50 dark:bg-green-900/20 text-green-600" title="Địa điểm chuẩn từ hệ thống">
+                        <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => onOpenMap(dayId, loc.id)}
+                        className="flex h-full items-center justify-center gap-1.5 border-l border-gray-200 bg-gray-50 px-3 text-xs font-bold text-gray-600 transition-colors hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-brand-400"
+                    >
+                        <Map className="h-4 w-4" /> Bản đồ
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 const DroppableAddButton = ({ dayId, onAdd }: { dayId: string, onAdd: () => void }) => {
@@ -73,7 +212,7 @@ const DroppableAddButton = ({ dayId, onAdd }: { dayId: string, onAdd: () => void
         </button>
     );
 };
-export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedProvinces, currentItinerary, setCurrentItinerary, locations }) => {
+export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedProvinces, currentItinerary, setCurrentItinerary, locations, setSelectedProvinces }) => {
     const [days, setDays] = useState<Itinerary_days[]>([]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [activeDragLoc, setActiveDragLoc] = useState<any>(null);
@@ -83,53 +222,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
     const isDataLoaded = React.useRef(false);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const DroppableActivityZone = ({ dayId, loc, onUpdate }: { dayId: string, loc: any, onUpdate: any }) => {
-        const { isOver, setNodeRef } = useDroppable({
-            id: `drop-activity-${dayId}-${loc.id}`,
-            data: { type: 'existing-activity', dayId, activityId: loc.id }
-        });
 
-        return (
-            <div
-                ref={setNodeRef}
-                className={`relative flex items-center rounded-lg border bg-white transition-all overflow-hidden h-[42px] ${isOver
-                    ? 'border-brand-500 bg-brand-50 shadow-md ring-2 ring-brand-500/20 dark:bg-brand-900/30'
-                    : 'border-gray-200 dark:border-gray-600 dark:bg-gray-800'
-                    }`}
-            >
-                <input
-                    type="text"
-                    placeholder={isOver ? "✨ Thả địa điểm vào đây..." : "Gõ tên, kéo thả, hoặc chọn Map..."}
-                    value={loc.location_name || ''}
-                    onChange={(e) => {
-                        onUpdate(dayId, loc.id, 'location_name', e.target.value);
-                        if (loc.location_id) {
-                            onUpdate(dayId, loc.id, 'location_id', "");
-                        }
-                    }}
-                    className={`flex-1 min-w-0 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-gray-400 dark:text-white ${isOver ? 'text-brand-600' : ''}`}
-                />
-                <div className="flex h-full items-center shrink-0">
-                    {loc.location_id ? (
-                        <div className="flex h-full items-center px-3 border-l border-gray-100 dark:border-gray-700 bg-green-50 dark:bg-green-900/20 text-green-600" title="Địa điểm chuẩn từ hệ thống">
-                            <CheckCircle2 className="h-4 w-4" />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => {
-                                setIsMapModalOpen(true);
-                                setCurrentActiveDayId(dayId);
-                                setCurrentActiveLocId(loc.id);
-                            }}
-                            className="flex h-full items-center justify-center gap-1.5 border-l border-gray-200 bg-gray-50 px-3 text-xs font-bold text-gray-600 transition-colors hover:bg-brand-50 hover:text-brand-600 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-brand-400"
-                        >
-                            <Map className="h-4 w-4" /> Bản đồ
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    };
 
     const calculateTotalCost = () => {
         return days.reduce((total, day) => {
@@ -141,27 +234,21 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
     React.useEffect(() => {
         if (currentItinerary) console.log(currentItinerary)
         if (currentItinerary?.itinerary_days && !isDataLoaded.current) {
-
-            // 🛠️ BƯỚC MAPPING: Chuyển đổi dữ liệu API cho khớp với Giao diện
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const formattedDays = currentItinerary.itinerary_days.map((day: any) => {
                 const rawLocations = day.itinerary_locations || [];
 
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const formattedLocations = rawLocations.map((loc: any) => {
-                    // Nếu loc.locations tồn tại, nghĩa là nó là dữ liệu lồng nhau từ API
                     if (loc.locations) {
                         return {
                             ...loc,
-                            // Kéo dữ liệu từ Object con (locations) ra ngoài thành thuộc tính ngang hàng
                             location_id: loc.locations.id,
                             location_name: loc.locations.name,
-                            lat: loc.locations.lat || 0, // Cứ dự phòng 0 nếu API thiếu
+                            lat: loc.locations.lat || 0,
                             lng: loc.locations.lng || 0
                         };
                     }
-
-                    // Nếu nó đã có sẵn location_name (trường hợp tự tạo mới từ giao diện) thì giữ nguyên
                     return loc;
                 });
 
@@ -172,7 +259,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             });
 
             setTimeout(() => {
-                setDays(formattedDays); // Ép vào State cái mảng đã được Mapping
+                setDays(formattedDays);
             }, 0);
 
             isDataLoaded.current = true;
@@ -189,19 +276,17 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                 setTimeout(() => {
                     setDays(prevDays => {
                         const newDays = [...prevDays];
-                        // Nếu user kéo dài ngày -> thêm ngày mới
                         if (newDays.length < diffDays) {
                             for (let i = newDays.length + 1; i <= diffDays; i++) {
                                 newDays.push({
                                     id: uuidv4(),
                                     day_number: i,
                                     title: `Ngày ${i}`,
-                                    itinerary_locations: [] // Lưu ý đổi thành itinerary_locations nếu db của bạn dùng tên này
+                                    itinerary_locations: []
                                 });
                             }
                             return newDays;
                         }
-                        // Nếu user rút ngắn ngày -> cắt bỏ ngày thừa
                         else if (newDays.length > diffDays) {
                             return newDays.slice(0, diffDays);
                         }
@@ -248,14 +333,17 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         }));
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleUpdateActivity = (dayId: string, activityId: string, field: string, value: any) => {
+    const handleUpdateActivity = (dayId: string, activityId: string, field: string | object, value?: any) => {
         setDays(prevDays => prevDays.map(day => {
             if (day.id === dayId) {
                 return {
                     ...day,
                     itinerary_locations: day.itinerary_locations.map((loc: Itinerary_locations) => {
                         if (loc.id === activityId) {
-                            return { ...loc, [field]: value };
+                            if (typeof field === 'object' && field !== null) {
+                                return { ...loc, ...field };
+                            }
+                            return { ...loc, [field as string]: value };
                         }
                         return loc;
                     })
@@ -284,10 +372,12 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         const dropData = over.data.current;
 
         if (dropData?.type === 'existing-activity') {
-            handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_id', draggedLocation.id);
-            handleUpdateActivity(dropData.dayId, dropData.activityId, 'location_name', draggedLocation.name);
-            handleUpdateActivity(dropData.dayId, dropData.activityId, 'lat', draggedLocation.lat);
-            handleUpdateActivity(dropData.dayId, dropData.activityId, 'lng', draggedLocation.lng);
+            handleUpdateActivity(dropData.dayId, dropData.activityId, {
+                location_id: draggedLocation.id,
+                location_name: draggedLocation.name,
+                lat: draggedLocation.lat,
+                lng: draggedLocation.lng
+            });
             toast.success(`Đã thêm địa điểm ${draggedLocation.name}`);
         } else if (dropData?.type === 'new-activity') {
             setDays(prevDays => prevDays.map(day => {
@@ -326,7 +416,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         if (currentItinerary?.start_date) submitData.append('start_date', currentItinerary.start_date);
         if (currentItinerary?.nights) submitData.append('nights', String(currentItinerary.nights));
         if (currentItinerary?.days) submitData.append('days', String(currentItinerary.days));
-        if (currentItinerary?.image_url) submitData.append('image_url', currentItinerary.image_url);
         submitData.append('estimated_cost', String(calculateTotalCost()));
         if (currentItinerary?.end_date) submitData.append('end_date', currentItinerary.end_date);
         submitData.append('share', String(currentItinerary?.share ?? false));
@@ -367,7 +456,10 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => setStep("SETUP")} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500" title="Quay lại">
+                    <button onClick={() => {
+                        setStep("SETUP")
+                        setCurrentItinerary(undefined)
+                    }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500" title="Quay lại">
                         <ArrowLeft className="h-6 w-6" />
                     </button>
                     <div className="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
@@ -397,8 +489,11 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                         </div>
                     </div>
                     <button
-                        onClick={() =>
+                        onClick={() => {
                             handleAddItinerary()
+                            setCurrentItinerary(undefined)
+                            setSelectedProvinces([])
+                        }
                         }
                         className="flex items-center rounded-xl bg-brand-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-brand-500/30 transition-all hover:bg-brand-700 active:scale-95">
                         <Save className="mr-2 h-4 w-4" /> Lưu
@@ -414,6 +509,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                                 <input
                                     type="text"
                                     value={currentItinerary?.title || ''}
+                                    required
                                     onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
                                     placeholder="Nhập tên lộ trình"
                                     className="flex-1 w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
@@ -538,6 +634,11 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
                                                                     dayId={day.id}
                                                                     loc={loc}
                                                                     onUpdate={handleUpdateActivity}
+                                                                    onOpenMap={(dId, lId) => {
+                                                                        setIsMapModalOpen(true);
+                                                                        setCurrentActiveDayId(dId);
+                                                                        setCurrentActiveLocId(lId);
+                                                                    }}
                                                                 />
                                                             </div>
                                                         )}
