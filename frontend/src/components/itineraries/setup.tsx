@@ -232,10 +232,30 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                                 image_url: data.image_url || "",
                                                 itinerary_days: data.itinerary_days || []
                                             });
+                                            let idsToFetch: string[] = [];
+
+                                            if (data.itinerary_provinces && data.itinerary_provinces.length > 0) {
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                const provincesList = data.itinerary_provinces.map((item: any) => {
+                                                    const prov = item.provinces || item;
+                                                    return {
+                                                        id: prov.id || prov.province_id,
+                                                        name: prov.name || "",
+                                                        image_url: prov.image_url ?? ""
+                                                    };
+                                                });
+                                                setSelectedProvinces(provincesList);
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                idsToFetch = provincesList.map((p: any) => p.id);
+
+                                            } else {
+                                                setSelectedProvinces([]);
+                                                idsToFetch = [];
+                                            }
+                                            fetchAllSelectedLocations(idsToFetch);
 
                                             toast.success("Tải dữ liệu thành công!", { id: toastId });
-                                            console.log("tải thành công", data)
-                                            setStep("BUILDER"); // Chuyển trang
+                                            setStep("BUILDER");
                                         } else {
                                             toast.error("Không tìm thấy dữ liệu chi tiết.", { id: toastId });
                                         }
@@ -248,7 +268,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                             >
                                 <div className="w-32 sm:w-48 overflow-hidden relative shrink-0">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={tpl.image_url} alt={tpl.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img src={tpl.image_url || ""} alt={tpl.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute top-2 left-2 flex flex-wrap gap-1 pr-2">
                                         <span className="bg-brand-500/90 backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
                                             {tpl.theme || "Du lịch"}

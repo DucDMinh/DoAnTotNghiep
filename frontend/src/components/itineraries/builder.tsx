@@ -269,6 +269,11 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         setActiveDragLoc(active.data.current?.location);
     };
 
+    useEffect(() => {
+        console.log("currentItinerary", currentItinerary)
+        console.log("selectedProvinces", selectedProvinces)
+    }, [currentItinerary, selectedProvinces])
+
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveDragLoc(null);
         const { active, over } = event;
@@ -335,10 +340,9 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
         if (finalImageUrl) {
             submitData.append('image_url', finalImageUrl);
         }
-        const provinceIds = selectedProvinces.map(p => p.id);
-        provinceIds.forEach(id => {
-            submitData.append('province_id', id);
-        });
+        if (selectedProvinces && selectedProvinces.length > 0) {
+            submitData.append('itinerary_provinces', JSON.stringify(selectedProvinces));
+        }
 
         const toastId = toast.loading("Đang lưu lộ trình...");
         try {

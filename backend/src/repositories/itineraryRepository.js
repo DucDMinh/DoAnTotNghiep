@@ -21,25 +21,36 @@ class ItineraryRepository extends BaseRepository {
     getById = async (id) => {
         const { data, error } = await supabase
             .from('itineraries')
-            .select(`*, itinerary_days (
-                    id, 
-                    day_number, 
-                    title,
-                    itinerary_locations (
-                        id, 
-                        sequence_order, 
-                        start_time, 
-                        end_time, 
-                        cost, 
-                        activity_note,
-                        locations (
-                            id, 
-                            name, 
-                            img, 
-                            difficulty_level
-                        )
-                    )
-                )`)
+            .select(`
+    *, 
+    itinerary_days (
+        id, 
+        day_number, 
+        title,
+        itinerary_locations (
+            id, 
+            sequence_order, 
+            start_time, 
+            end_time, 
+            cost, 
+            activity_note,
+            locations (
+                id, 
+                name, 
+                img, 
+                difficulty_level
+            )
+        )
+    ), 
+    itinerary_provinces (
+        province_id,
+        provinces (
+            id,
+            name,
+            image_url
+        )
+    )
+`)
             .eq('id', id)
             .single();
 

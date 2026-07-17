@@ -13,6 +13,9 @@ class ItineraryController extends BaseController {
             if (payload.itinerary_days && typeof payload.itinerary_days === 'string') {
                 payload.itinerary_days = JSON.parse(payload.itinerary_days);
             }
+            if (payload.itinerary_provinces && typeof payload.itinerary_provinces === 'string') {
+                payload.itinerary_provinces = JSON.parse(payload.itinerary_provinces);
+            }
             if (payload.estimated_cost) {
                 payload.estimated_cost = Number(payload.estimated_cost);
             }
