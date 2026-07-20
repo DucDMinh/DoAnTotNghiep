@@ -120,6 +120,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                         selectedProvinces={selectedProvinces}
                         locations={locations}
                         onAddLocation={handleAddLocationToItinerary}
+                        days={days}
                     />
 
                 </main>
