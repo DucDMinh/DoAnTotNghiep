@@ -1,18 +1,19 @@
 import {
-    Save, Calendar, DollarSign, MapPin,
-    Plus, Trash2, Search, Filter, Map,
-    ArrowLeft, CheckCircle2, X
+    DollarSign, MapPin,
+    Plus, Trash2, Search, Filter, Map, CheckCircle2, X
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
-import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
+import { BuilderScreenProp, Itinerary_locations } from "@/interface";
 import React from "react";
-import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, DragOverlay } from '@dnd-kit/core';
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { Compass } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
-import Switch from '@mui/material/Switch';
+import { useItineraryBuilder } from "@/hooks/Itineraries/useItineraryBuilder";
+import { BuilderHeader } from "./BuilderHeader";
+import { GeneralInfoForm } from "./GeneralInfoForm";
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
     ssr: false,
@@ -68,8 +69,6 @@ const DroppableActivityZone = ({
         data: { type: 'existing-activity', dayId, activityId: loc.id }
     });
 
-
-    // Thêm 1 state nhỏ để hiện loading xoay xoay lúc đang tìm tọa độ
     const [isSearchingLoc, setIsSearchingLoc] = useState(false);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -91,24 +90,19 @@ const DroppableActivityZone = ({
                 value={loc.location_name || ''}
                 onChange={(e) => {
                     const newValue = e.target.value;
-
-                    // Nếu địa điểm đã có ID (được chọn từ gợi ý/ map), xóa ID để biến thành "tự do"
                     if (loc.location_id) {
                         onUpdate(dayId, loc.id, {
                             location_name: newValue,
                             location_id: "", // xóa liên kết cũ
                         });
                     } else {
-                        // Địa điểm tự do, cập nhật tên giữ nguyên tọa độ cũ (sẽ tìm lại ở onBlur)
                         onUpdate(dayId, loc.id, { location_name: newValue });
                     }
                 }}
                 onBlur={async (e) => {
                     const typedName = e.target.value.trim();
                     if (!typedName) return;
-                    if (isSearchingLoc) return; // đang tải thì không gọi lại
-
-                    // Hủy request cũ nếu có
+                    if (isSearchingLoc) return;
                     if (abortControllerRef.current) {
                         abortControllerRef.current.abort();
                     }
@@ -210,88 +204,26 @@ const DroppableAddButton = ({ dayId, onAdd }: { dayId: string, onAdd: () => void
         </button>
     );
 };
-export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedProvinces, currentItinerary, setCurrentItinerary, locations, setSelectedProvinces }) => {
-    const [days, setDays] = useState<Itinerary_days[]>([]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [activeDragLoc, setActiveDragLoc] = useState<any>(null);
-    const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
+    const { setStep,
+        selectedProvinces,
+        currentItinerary,
+        setCurrentItinerary,
+        locations,
+        setSelectedProvinces } = props;
+    const { days,
+        calculateTotalCost,
+        activeDragLoc,
+        isMapModalOpen,
+        handleDragStart,
+        handleDragEnd,
+        setIsMapModalOpen,
+        handleUpdateActivity,
+        setDays,
+        handleAddItinerary } = useItineraryBuilder(props);
+
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
-    const isDataLoaded = React.useRef(false);
-
-    const calculateTotalCost = () => {
-        return days.reduce((total, day) => {
-            const dayCost = day.itinerary_locations?.reduce((sum, loc) => sum + (Number(loc.cost) || 0), 0) || 0;
-            return total + dayCost;
-        }, 0);
-    };
-    const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    React.useEffect(() => {
-        if (currentItinerary) console.log(currentItinerary)
-        if (currentItinerary?.itinerary_days && !isDataLoaded.current) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const formattedDays = currentItinerary.itinerary_days.map((day: any) => {
-                const rawLocations = day.itinerary_locations || [];
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const formattedLocations = rawLocations.map((loc: any) => {
-                    if (loc.locations) {
-                        return {
-                            ...loc,
-                            location_id: loc.locations.id,
-                            location_name: loc.locations.name,
-                            lat: loc.locations.lat || 0,
-                            lng: loc.locations.lng || 0
-                        };
-                    }
-                    return loc;
-                });
-
-                return {
-                    ...day,
-                    itinerary_locations: formattedLocations
-                };
-            });
-
-            setTimeout(() => {
-                setDays(formattedDays);
-            }, 0);
-
-            isDataLoaded.current = true;
-            return;
-        }
-        if (currentItinerary?.start_date && currentItinerary.end_date) {
-            const start = new Date(currentItinerary.start_date);
-            const end = new Date(currentItinerary.end_date);
-
-            if (end >= start) {
-                const diffTime = end.getTime() - start.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-                setTimeout(() => {
-                    setDays(prevDays => {
-                        const newDays = [...prevDays];
-                        if (newDays.length < diffDays) {
-                            for (let i = newDays.length + 1; i <= diffDays; i++) {
-                                newDays.push({
-                                    id: uuidv4(),
-                                    day_number: i,
-                                    title: `Ngày ${i}`,
-                                    itinerary_locations: []
-                                });
-                            }
-                            return newDays;
-                        }
-                        else if (newDays.length > diffDays) {
-                            return newDays.slice(0, diffDays);
-                        }
-                        return prevDays;
-                    });
-                }, 0);
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentItinerary?.start_date, currentItinerary?.end_date, currentItinerary?.itinerary_days]);
     const handleAddActivity = (dayId: string) => {
         setDays(prevDays => prevDays.map(day => {
             if (day.id === dayId) {
@@ -328,250 +260,31 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = ({ setStep, selectedPr
             return day;
         }));
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleUpdateActivity = (dayId: string, activityId: string, field: string | object, value?: any) => {
-        setDays(prevDays => prevDays.map(day => {
-            if (day.id === dayId) {
-                return {
-                    ...day,
-                    itinerary_locations: day.itinerary_locations.map((loc: Itinerary_locations) => {
-                        if (loc.id === activityId) {
-                            if (typeof field === 'object' && field !== null) {
-                                return { ...loc, ...field };
-                            }
-                            return { ...loc, [field as string]: value };
-                        }
-                        return loc;
-                    })
-                };
-            }
-            return day;
-        }));
-    };
-    const handleDragStart = (event: DragStartEvent) => {
-        const { active } = event;
-        setActiveDragLoc(active.data.current?.location);
-    };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        setActiveDragLoc(null);
-        const { active, over } = event;
-
-        if (!over) return;
-
-        const draggedLocation = active.data.current?.location;
-        const dropData = over.data.current;
-
-        if (dropData?.type === 'existing-activity') {
-            handleUpdateActivity(dropData.dayId, dropData.activityId, {
-                location_id: draggedLocation.id,
-                location_name: draggedLocation.name,
-                lat: draggedLocation.lat,
-                lng: draggedLocation.lng
-            });
-            toast.success(`Đã thêm địa điểm ${draggedLocation.name}`);
-        } else if (dropData?.type === 'new-activity') {
-            setDays(prevDays => prevDays.map(day => {
-                if (day.id === dropData.dayId) {
-                    const newActivity: Itinerary_locations = {
-                        id: uuidv4(),
-                        day_id: day.id,
-                        location_id: draggedLocation.id,
-                        location_name: draggedLocation.name,
-                        start_time: "08:00",
-                        end_time: "10:00",
-                        cost: 0,
-                        sequence_order: (day.itinerary_locations?.length || 0) + 1,
-                        activity_note: "",
-                        lat: draggedLocation.lat,
-                        lng: draggedLocation.lng
-                    };
-
-                    return { ...day, itinerary_locations: [...(day.itinerary_locations || []), newActivity] };
-                }
-                return day;
-            }));
-            toast.success(`Đã tạo hoạt động tại ${draggedLocation.name}`);
-        }
-    };
-
-    const handleAddItinerary = async () => {
-        const submitData = new FormData();
-        if (currentItinerary?.title) submitData.append('title', currentItinerary.title);
-        if (currentItinerary?.theme) submitData.append('theme', currentItinerary.theme);
-        if (currentItinerary?.summary) submitData.append('summary', currentItinerary.summary);
-        if (currentItinerary?.start_date) submitData.append('start_date', currentItinerary.start_date);
-        if (currentItinerary?.nights) submitData.append('nights', String(currentItinerary.nights));
-        if (currentItinerary?.days) submitData.append('days', String(currentItinerary.days));
-        submitData.append('estimated_cost', String(calculateTotalCost()));
-        if (currentItinerary?.end_date) submitData.append('end_date', currentItinerary.end_date);
-        submitData.append('share', String(currentItinerary?.share ?? false));
-        if (days && days.length > 0) {
-            submitData.append('itinerary_days', JSON.stringify(days));
-        }
-        let finalImageUrl = currentItinerary?.image_url;
-        if (!finalImageUrl && selectedProvinces && selectedProvinces.length > 0) {
-            finalImageUrl = selectedProvinces[0].image_url;
-        }
-        if (finalImageUrl) {
-            submitData.append('image_url', finalImageUrl);
-        }
-        if (selectedProvinces && selectedProvinces.length > 0) {
-            submitData.append('itinerary_provinces', JSON.stringify(selectedProvinces));
-        }
-
-        const toastId = toast.loading("Đang lưu lộ trình...");
-        try {
-            console.log("submitData", Object.fromEntries(submitData.entries()));
-            const response = await fetch("http://localhost:8000/itineraries", {
-                method: "POST",
-                body: submitData
-            });
-
-            if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
-
-            toast.success("Lưu lộ trình thành công!", { id: toastId });
-
-            setStep("SETUP");
-
-        } catch (error) {
-            console.error("Lỗi:", error);
-            toast.error("Có lỗi xảy ra khi lưu!", { id: toastId });
-        }
-    }
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => {
-                        setStep("SETUP")
-                        setCurrentItinerary(undefined)
-                    }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500" title="Quay lại">
-                        <ArrowLeft className="h-6 w-6" />
-                    </button>
-                    <div className="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-                        <Map className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Thiết kế Lộ trình</h1>
-                        <div className="flex gap-1.5 mt-0.5">
-                            {selectedProvinces.length > 0 ? (
-                                selectedProvinces.map(p => (
-                                    <span key={p.id} className="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md dark:bg-brand-900/30 dark:text-brand-400">{p.name}</span>
-                                ))
-                            ) : (
-                                <span className="text-xs text-gray-500">Chưa chọn khu vực cụ thể</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2 text-green-700 dark:bg-green-900/20 dark:text-green-400 hidden sm:flex">
-                        <DollarSign className="h-5 w-5" />
-                        <div>
-                            <p className="text-xs font-semibold uppercase opacity-70">Tổng dự kiến</p>
-                            <p className="text-lg font-bold leading-none">{calculateTotalCost().toLocaleString('vi-VN')} đ</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => {
-                            handleAddItinerary()
-                            setCurrentItinerary(undefined)
-                            setSelectedProvinces([])
-                        }
-                        }
-                        className="flex items-center rounded-xl bg-brand-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-brand-500/30 transition-all hover:bg-brand-700 active:scale-95">
-                        <Save className="mr-2 h-4 w-4" /> Lưu
-                    </button>
-                </div>
+                <BuilderHeader
+                    totalCost={calculateTotalCost()}
+                    selectedProvinces={selectedProvinces}
+                    onBack={() => {
+                        setStep("SETUP");
+                        setCurrentItinerary(undefined);
+                    }}
+                    onSave={() => {
+                        handleAddItinerary();
+                        setCurrentItinerary(undefined);
+                        setSelectedProvinces([]);
+                    }}
+                />
             </header>
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden h-[calc(100vh-80px)]">
                     <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
-                        <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                            <div className="flex items-center justify-between gap-4">
-                                <input
-                                    type="text"
-                                    value={currentItinerary?.title || ''}
-                                    required
-                                    onChange={(e) => setCurrentItinerary({ ...currentItinerary, title: e.target.value })}
-                                    placeholder="Nhập tên lộ trình"
-                                    className="flex-1 w-full border-none bg-transparent text-3xl font-black text-gray-900 focus:outline-none focus:ring-0 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-700"
-                                />
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        {currentItinerary?.share ? 'Công khai' : 'Riêng tư'}
-                                    </span>
-                                    <Switch checked={currentItinerary?.share ?? false}
-                                        onChange={() => setCurrentItinerary({
-                                            ...currentItinerary,
-                                            share: !currentItinerary?.share
-                                        })}>
-                                    </Switch>
-                                </div>
-                            </div>
-                            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        Ngày khởi hành
-                                    </label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none z-10" />
-
-                                        <input
-                                            type="date"
-                                            min={today}
-                                            value={currentItinerary?.start_date || ''}
-                                            onChange={(e) => setCurrentItinerary({ ...currentItinerary, start_date: e.target.value })}
-                                            onClick={(e) => {
-                                                if ('showPicker' in HTMLInputElement.prototype) {
-                                                    e.currentTarget.showPicker();
-                                                }
-                                            }}
-
-                                            className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        Ngày kết thúc
-                                    </label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none z-10" />
-
-                                        <input
-                                            type="date"
-                                            value={currentItinerary?.end_date || ''}
-                                            onChange={(e) => setCurrentItinerary({ ...currentItinerary, end_date: e.target.value })}
-                                            min={currentItinerary?.start_date || today}
-                                            onClick={(e) => {
-                                                if ('showPicker' in HTMLInputElement.prototype) {
-                                                    e.currentTarget.showPicker();
-                                                }
-                                            }}
-
-                                            className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="mb-1.5 flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                        <MapPin className="mr-2 h-4 w-4" /> Chủ đề
-                                    </label>
-                                    <select value={currentItinerary?.theme || ''} onChange={(e) => setCurrentItinerary({ ...currentItinerary, theme: e.target.value })} className="w-full rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-                                        <option value="">Chọn chủ đề...</option>
-                                        <option value="Trekking & Khám phá">Trekking & Khám phá</option>
-                                        <option value="Nghỉ dưỡng">Nghỉ dưỡng</option>
-                                        <option value="Văn hóa - Lịch sử">Văn hóa - Lịch sử</option>
-                                        <option value="Ẩm thực">Ẩm thực</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
+                        <GeneralInfoForm
+                            currentItinerary={currentItinerary}
+                            setCurrentItinerary={setCurrentItinerary}
+                        />
                         <div className="space-y-6">
                             {days.length > 0 ? days.map((day) => (
                                 <motion.div key={day.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">                              <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-gray-800 dark:bg-gray-800/50">

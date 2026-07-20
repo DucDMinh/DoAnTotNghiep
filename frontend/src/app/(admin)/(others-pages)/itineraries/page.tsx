@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { Itinerary, Location, Province } from "@/interface";
 import { SetupScreen } from "@/components/itineraries/setup";
-import { BuilderScreen } from "@/components/itineraries/builder";
+import { BuilderScreen } from "@/components/itineraries/builder/BuilderScreen";
 
 export default function ItineraryBuilderPage() {
     const [step, setStep] = useState<"SETUP" | "BUILDER">("SETUP");
