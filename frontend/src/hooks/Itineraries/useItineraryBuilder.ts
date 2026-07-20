@@ -153,6 +153,42 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
             toast.success(`Đã tạo hoạt động tại ${draggedLocation.name}`);
         }
     };
+    const handleAddActivity = (dayId: string) => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                const newActivity: Itinerary_locations = {
+                    id: uuidv4(),
+                    day_id: day.id,
+                    location_id: "",
+                    sequence_order: (day.itinerary_locations?.length || 0) + 1,
+                    activity_note: "",
+                    cost: 0,
+                    start_time: "08:00",
+                    end_time: "10:00",
+                    location_name: "",
+                    lat: 0,
+                    lng: 0
+                };
+
+                return {
+                    ...day,
+                    itinerary_locations: [...(day.itinerary_locations || []), newActivity]
+                };
+            }
+            return day;
+        }));
+    };
+    const handleRemoveActivity = (dayId: string, activityId: string) => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                return {
+                    ...day,
+                    itinerary_locations: day.itinerary_locations.filter((loc: Itinerary_locations) => loc.id !== activityId)
+                };
+            }
+            return day;
+        }));
+    };
 
     const handleAddItinerary = async () => {
         const submitData = new FormData();
@@ -208,6 +244,8 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         handleDragEnd,
         handleAddItinerary,
         setIsMapModalOpen,
-        handleUpdateActivity
+        handleUpdateActivity,
+        handleAddActivity,
+        handleRemoveActivity
     };
 };
