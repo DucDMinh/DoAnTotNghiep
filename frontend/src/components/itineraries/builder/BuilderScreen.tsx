@@ -12,7 +12,7 @@ import { GeneralInfoForm } from "./GeneralInfoForm";
 import { DayCard } from "./DayCard";
 import { LocationSidebar } from "./LocationSidebar";
 import { DraggableLocationCard } from "./DraggableLocationCard";
-import { Map as MapIcon, AlertTriangle } from "lucide-react"; // Đổi tên để không trùng với Component
+import { Map as MapIcon, AlertTriangle } from "lucide-react";
 
 const RouteMapViewer = dynamic(() => import("@/components/itineraries/builder/RouteMapViewer"), {
     ssr: false,
@@ -53,7 +53,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
         handleUpdateActivity,
         handleAddItinerary,
         handleAddActivity,
-        handleRemoveActivity } = useItineraryBuilder(props);
+        handleRemoveActivity, handleAddLocationToItinerary } = useItineraryBuilder(props);
 
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
@@ -77,8 +77,8 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                 />
             </header>
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 overflow-hidden h-[calc(100vh-80px)]">
-                    <div className="col-span-1 xl:col-span-8 overflow-y-auto p-6 lg:p-8 custom-scrollbar pb-32">
+                <main className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0">
+                    <div className="col-span-1 xl:col-span-8 p-6 lg:p-8 pb-32">
                         <GeneralInfoForm
                             currentItinerary={currentItinerary}
                             setCurrentItinerary={setCurrentItinerary}
@@ -119,6 +119,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                     <LocationSidebar
                         selectedProvinces={selectedProvinces}
                         locations={locations}
+                        onAddLocation={handleAddLocationToItinerary}
                     />
 
                 </main>

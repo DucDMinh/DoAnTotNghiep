@@ -6,15 +6,12 @@ import toast from "react-hot-toast";
 import { v4 as uuidv4 } from 'uuid';
 import React from "react";
 
-// Truyền thẳng BuilderScreenProp vào đây
 export const useItineraryBuilder = (props: BuilderScreenProp) => {
     const { currentItinerary, selectedProvinces, setStep } = props;
     const [days, setDays] = useState<Itinerary_days[]>([]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [activeDragLoc, setActiveDragLoc] = useState<any>(null);
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-
-    // 2. Mang các hàm tính toán, xử lý sự kiện sang đây
     const calculateTotalCost = () => {
         return days.reduce((total, day) => {
             const dayCost = day.itinerary_locations?.reduce((sum, loc) => sum + (Number(loc.cost) || 0), 0) || 0;
@@ -113,6 +110,104 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentItinerary?.start_date, currentItinerary?.end_date, currentItinerary?.itinerary_days]);
+    const scrollToActivity = (activityId: string) => {
+        setTimeout(() => {
+            const element = document.getElementById(`activity-${activityId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                element.classList.add('ring-4', 'ring-brand-500', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');
+                setTimeout(() => {
+                    element.classList.remove('ring-4', 'ring-brand-500', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');
+                }, 1500);
+            }
+        }, 150);
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleAddLocationToItinerary = (location: any) => {
+        if (days.length === 0) {
+            toast.error("Vui lòng thiết lập ngày đi trước khi thêm địa điểm!");
+            return;
+        }
+
+        let targetDayId: string | null = null;
+        let targetActivityId: string | null = null;
+        let targetDayTitle = "";
+        for (const day of days) {
+            const emptySlot = day.itinerary_locations?.find(
+                (loc: Itinerary_locations) => !loc.location_id
+            );
+            if (emptySlot) {
+                targetDayId = day.id;
+                targetActivityId = emptySlot.id;
+                targetDayTitle = day.title;
+                break;
+            }
+        }
+
+        let elementIdToScroll = "";
+        if (targetDayId && targetActivityId) {
+            setDays(prevDays => prevDays.map(day => {
+                if (day.id === targetDayId) {
+                    return {
+                        ...day,
+                        itinerary_locations: day.itinerary_locations.map((loc: Itinerary_locations) => {
+                            if (loc.id === targetActivityId) {
+                                return { ...loc, location_id: location.id, location_name: location.name, lat: location.lat, lng: location.lng };
+                            }
+                            return loc;
+                        })
+                    };
+                }
+                return day;
+            }));
+            elementIdToScroll = `activity-${targetActivityId}`;
+            toast.success(`Đã điền ${location.name} vào ${targetDayTitle}`);
+        } else {
+            const firstDay = days[0];
+            const newActivityId = uuidv4();
+
+            setDays(prevDays => prevDays.map(day => {
+                if (day.id === firstDay.id) {
+                    const currentLocations = day.itinerary_locations || [];
+                    let nextStartTime = "08:00";
+                    if (currentLocations.length > 0) {
+                        const lastActivity = currentLocations[currentLocations.length - 1];
+                        if (lastActivity.end_time) nextStartTime = lastActivity.end_time;
+                    }
+
+                    const newActivity: Itinerary_locations = {
+                        id: newActivityId,
+                        day_id: day.id,
+                        location_id: location.id,
+                        location_name: location.name,
+                        lat: location.lat,
+                        lng: location.lng,
+                        start_time: nextStartTime,
+                        end_time: "",
+                        cost: 0,
+                        sequence_order: currentLocations.length + 1,
+                        activity_note: "",
+                    };
+                    return { ...day, itinerary_locations: [...currentLocations, newActivity] };
+                }
+                return day;
+            }));
+            elementIdToScroll = `activity-${newActivityId}`;
+            toast.success(`Đã thêm hoạt động mới tại ${location.name} vào ${firstDay.title}`);
+        }
+        if (elementIdToScroll) {
+            setTimeout(() => {
+                const element = document.getElementById(elementIdToScroll);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('ring-4', 'ring-brand-500', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');
+                    setTimeout(() => {
+                        element.classList.remove('ring-4', 'ring-brand-500', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/20');
+                    }, 1500);
+                }
+            }, 150);
+        }
+    };
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveDragLoc(null);
         const { active, over } = event;
@@ -121,6 +216,7 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
 
         const draggedLocation = active.data.current?.location;
         const dropData = over.data.current;
+
         if (dropData?.type === 'existing-activity') {
             handleUpdateActivity(dropData.dayId, dropData.activityId, {
                 location_id: draggedLocation.id,
@@ -129,11 +225,15 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
                 lng: draggedLocation.lng
             });
             toast.success(`Đã thêm địa điểm ${draggedLocation.name}`);
+            scrollToActivity(dropData.activityId);
+
         } else if (dropData?.type === 'new-activity') {
+            const newActivityId = uuidv4();
+
             setDays(prevDays => prevDays.map(day => {
                 if (day.id === dropData.dayId) {
                     const newActivity: Itinerary_locations = {
-                        id: uuidv4(),
+                        id: newActivityId,
                         day_id: day.id,
                         location_id: draggedLocation.id,
                         location_name: draggedLocation.name,
@@ -150,21 +250,34 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
                 }
                 return day;
             }));
+
             toast.success(`Đã tạo hoạt động tại ${draggedLocation.name}`);
+            scrollToActivity(newActivityId);
         }
     };
     const handleAddActivity = (dayId: string) => {
         setDays(prevDays => prevDays.map(day => {
             if (day.id === dayId) {
+                const currentLocations = day.itinerary_locations || [];
+
+                let nextStartTime = "08:00";
+
+                if (currentLocations.length > 0) {
+                    const lastActivity = currentLocations[currentLocations.length - 1];
+                    if (lastActivity.end_time) {
+                        nextStartTime = lastActivity.end_time;
+                    }
+                }
+
                 const newActivity: Itinerary_locations = {
                     id: uuidv4(),
                     day_id: day.id,
                     location_id: "",
-                    sequence_order: (day.itinerary_locations?.length || 0) + 1,
+                    sequence_order: currentLocations.length + 1,
                     activity_note: "",
                     cost: 0,
-                    start_time: "08:00",
-                    end_time: "10:00",
+                    start_time: nextStartTime,
+                    end_time: "",
                     location_name: "",
                     lat: 0,
                     lng: 0
@@ -172,7 +285,7 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
 
                 return {
                     ...day,
-                    itinerary_locations: [...(day.itinerary_locations || []), newActivity]
+                    itinerary_locations: [...currentLocations, newActivity]
                 };
             }
             return day;
@@ -246,6 +359,7 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         setIsMapModalOpen,
         handleUpdateActivity,
         handleAddActivity,
-        handleRemoveActivity
+        handleRemoveActivity,
+        handleAddLocationToItinerary
     };
 };

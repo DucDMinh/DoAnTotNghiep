@@ -34,7 +34,7 @@ export const DayCard = ({
                 </div>
                     <div className="p-4 space-y-4">
                         {day.itinerary_locations?.map((loc: Itinerary_locations) => (
-                            <div key={loc.id} className="group relative flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50 hover:border-brand-300 transition-colors">
+                            <div key={loc.id} id={`activity-${loc.id}`} className="group relative flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50 hover:border-brand-300 transition-colors">
                                 <button
                                     onClick={() => handleRemoveActivity(day.id, loc.id)}
                                     className="absolute right-3 top-3 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all dark:hover:bg-red-900/30"
