@@ -12,6 +12,17 @@ import { GeneralInfoForm } from "./GeneralInfoForm";
 import { DayCard } from "./DayCard";
 import { LocationSidebar } from "./LocationSidebar";
 import { DraggableLocationCard } from "./DraggableLocationCard";
+import { Map as MapIcon, AlertTriangle } from "lucide-react"; // Đổi tên để không trùng với Component
+
+const RouteMapViewer = dynamic(() => import("@/components/itineraries/builder/RouteMapViewer"), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-full w-full flex-col items-center justify-center bg-gray-900 text-sm text-gray-400">
+            <Compass className="h-8 w-8 animate-spin text-brand-400 mb-3" />
+            <span className="font-medium tracking-wider text-xs uppercase text-gray-400">Đang vẽ đường đi...</span>
+        </div>
+    ),
+});
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
     ssr: false,
@@ -46,6 +57,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
 
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
+    const [isRouteViewerOpen, setIsRouteViewerOpen] = useState(false);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
@@ -71,6 +83,26 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                             currentItinerary={currentItinerary}
                             setCurrentItinerary={setCurrentItinerary}
                         />
+                        <div className="mt-8 mb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lịch trình chi tiết</h2>
+
+                                <div className="flex flex-col items-end gap-2">
+                                    <button
+                                        onClick={() => setIsRouteViewerOpen(true)}
+                                        className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 transition-colors"
+                                    >
+                                        <MapIcon className="h-4 w-4" /> Xem bản đồ lộ trình
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-400">
+                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                                <p>
+                                    <span className="font-semibold">Lưu ý:</span> Hệ thống chỉ đường tự động có thể thiết lập sai tuyến đường ở các khu vực gần biên giới quốc gia. Bản đồ chỉ mang tính chất tham khảo trực quan, vui lòng không sử dụng để điều hướng thực tế.
+                                </p>
+                            </div>
+                        </div>
                         <div className="mt-6">
                             <DayCard
                                 days={days}
@@ -97,9 +129,38 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                         </div>
                     ) : null}
                 </DragOverlay>
+                {isRouteViewerOpen && (
+                    <div
+                        className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/70 p-4 backdrop-blur-sm"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setIsRouteViewerOpen(false);
+                            }
+                        }}
+                    >
+                        <div className="relative h-[80vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+                            <button
+                                onClick={() => setIsRouteViewerOpen(false)}
+                                className="absolute right-4 top-4 z-10 rounded-full bg-white p-2.5 text-gray-500 shadow-lg hover:bg-red-50 hover:text-red-500 transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+
+                            <div className="h-full w-full">
+                                <RouteMapViewer days={days} />
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {isMapModalOpen && (
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/70 p-4 backdrop-blur-sm">
-                        <div className="relative h-[80vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-950/70 p-4 backdrop-blur-sm"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setIsMapModalOpen(false);
+                            }
+                        }}>
+                        <div className="relative h-[80vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
+                        >
                             {/* Nút đóng */}
                             <button
                                 onClick={() => setIsMapModalOpen(false)}

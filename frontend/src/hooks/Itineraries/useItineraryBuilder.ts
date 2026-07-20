@@ -61,8 +61,8 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
                             ...loc,
                             location_id: loc.locations.id,
                             location_name: loc.locations.name,
-                            lat: loc.locations.lat || 0,
-                            lng: loc.locations.lng || 0
+                            lat: Number(loc.lat || loc.locations?.lat || 0),
+                            lng: Number(loc.lng || loc.locations?.lng || 0)
                         };
                     }
                     return loc;
