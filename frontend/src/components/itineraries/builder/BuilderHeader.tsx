@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Map, ArrowLeft, Save, DollarSign, Plus, MapPin } from "lucide-react"; // 🌟 Nhớ import MapPin
+import { Map, ArrowLeft, Save, DollarSign, Plus, MapPin, X } from "lucide-react"; // 🌟 Nhớ import MapPin
 
 interface BuilderHeaderProps {
     totalCost: number;
@@ -13,11 +13,12 @@ interface BuilderHeaderProps {
     filteredProvinces: any[];
     onAddNewProvince: (province: any) => void;
     onOpenDropdown: () => void;
+    onRemoveProvince: (id: string) => void;
 }
 
 export const BuilderHeader = ({
     totalCost, selectedProvinces, onBack, onSave,
-    isDropdownOpen, setIsDropdownOpen, searchProvince, setSearchProvince, filteredProvinces, onAddNewProvince, onOpenDropdown
+    isDropdownOpen, setIsDropdownOpen, searchProvince, setSearchProvince, filteredProvinces, onAddNewProvince, onOpenDropdown, onRemoveProvince
 }: BuilderHeaderProps) => {
     return (
         <>
@@ -34,8 +35,15 @@ export const BuilderHeader = ({
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         {selectedProvinces.length > 0 ? (
                             selectedProvinces.map(p => (
-                                <span key={p.id} className="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md dark:bg-brand-900/30 dark:text-brand-400">
+                                <span key={p.id} className="flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md dark:bg-brand-900/30 dark:text-brand-400">
                                     {p.name}
+                                    <button
+                                        onClick={() => onRemoveProvince(p.id)}
+                                        className="text-brand-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full p-0.5 transition-colors"
+                                        title="Xóa khu vực này"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
                                 </span>
                             ))
                         ) : (

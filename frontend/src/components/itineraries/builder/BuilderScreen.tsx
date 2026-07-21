@@ -87,6 +87,20 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
             toast.error("Lỗi khi tải địa điểm.", { id: toastId });
         }
     };
+    const handleRemoveProvinceClick = async (provinceId: string) => {
+        const toastId = toast.loading("Đang cập nhật lại danh sách địa điểm...");
+        try {
+            const newSelectedProvinces = selectedProvinces.filter(p => p.id !== provinceId);
+            setSelectedProvinces(newSelectedProvinces);
+            const idsToFetch = newSelectedProvinces.map(p => p.id);
+            await fetchAllSelectedLocations(idsToFetch);
+
+            toast.success("Đã cập nhật", { id: toastId });
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi khi cập nhật địa điểm.", { id: toastId });
+        }
+    };
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
@@ -110,6 +124,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                     filteredProvinces={filteredProvinces || []}
                     onAddNewProvince={handleAddNewProvince}
                     onOpenDropdown={handleOpenDropdown}
+                    onRemoveProvince={handleRemoveProvinceClick}
                 />
             </header>
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
