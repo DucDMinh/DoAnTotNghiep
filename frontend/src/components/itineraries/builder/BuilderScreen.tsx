@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { X } from "lucide-react";
 import { useState } from "react";
 import { BuilderScreenProp } from "@/interface";
@@ -13,6 +14,7 @@ import { DayCard } from "./DayCard";
 import { LocationSidebar } from "./LocationSidebar";
 import { DraggableLocationCard } from "./DraggableLocationCard";
 import { Map as MapIcon, AlertTriangle } from "lucide-react";
+import { useItinerarySetup } from "@/hooks/Itineraries/useItinerarySetup";
 
 const RouteMapViewer = dynamic(() => import("@/components/itineraries/builder/RouteMapViewer"), {
     ssr: false,
@@ -36,12 +38,7 @@ const MapPicker = dynamic(() => import("@/components/map/MapPicker"), {
 
 
 export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
-    const { setStep,
-        selectedProvinces,
-        currentItinerary,
-        setCurrentItinerary,
-        locations,
-        setSelectedProvinces } = props;
+    const { setStep, selectedProvinces, currentItinerary, setCurrentItinerary, locations, setSelectedProvinces } = props;
     const {
         days,
         calculateTotalCost,
@@ -54,11 +51,42 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
         handleAddItinerary,
         handleAddActivity,
         handleRemoveActivity, handleAddLocationToItinerary } = useItineraryBuilder(props);
+    const {
+        isDropdownOpen,
+        setIsDropdownOpen,
+        searchProvince,
+        setSearchProvince,
+        filteredProvinces,
+        fetchProvinces,
+        fetchAllSelectedLocations
+    } = useItinerarySetup({
+        ...props,
+        step: "BUILDER"
+    } as any);
 
     const [currentActiveDayId, setCurrentActiveDayId] = useState<string | null>(null);
     const [currentActiveLocId, setCurrentActiveLocId] = useState<string | null>(null);
     const [isRouteViewerOpen, setIsRouteViewerOpen] = useState(false);
 
+    const handleOpenDropdown = async () => {
+        setIsDropdownOpen(true);
+        await fetchProvinces();
+    };
+    const handleAddNewProvince = async (province: any) => {
+        const toastId = toast.loading(`Đang tải địa điểm của ${province.name}...`);
+        try {
+            const newSelectedProvinces = [...selectedProvinces, province];
+            setSelectedProvinces(newSelectedProvinces);
+
+            const idsToFetch = newSelectedProvinces.map(p => p.id);
+            await fetchAllSelectedLocations(idsToFetch);
+            toast.success(`Đã thêm ${province.name}`, { id: toastId });
+            setSearchProvince("");
+        } catch (error) {
+            console.error(error);
+            toast.error("Lỗi khi tải địa điểm.", { id: toastId });
+        }
+    };
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col dark:bg-gray-950 font-sans animate-in fade-in zoom-in-95 duration-300">
             <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
@@ -68,12 +96,20 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                     onBack={() => {
                         setStep("SETUP");
                         setCurrentItinerary(undefined);
+                        setSelectedProvinces([]);
                     }}
                     onSave={() => {
                         handleAddItinerary();
                         setCurrentItinerary(undefined);
                         setSelectedProvinces([]);
                     }}
+                    isDropdownOpen={isDropdownOpen}
+                    setIsDropdownOpen={setIsDropdownOpen}
+                    searchProvince={searchProvince}
+                    setSearchProvince={setSearchProvince}
+                    filteredProvinces={filteredProvinces || []}
+                    onAddNewProvince={handleAddNewProvince}
+                    onOpenDropdown={handleOpenDropdown}
                 />
             </header>
             <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -163,7 +199,6 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                         }}>
                         <div className="relative h-[80vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
                         >
-                            {/* Nút đóng */}
                             <button
                                 onClick={() => setIsMapModalOpen(false)}
                                 className="absolute right-4 top-4 z-10 rounded-full bg-white p-2.5 text-gray-500 shadow-lg hover:bg-red-50 hover:text-red-500 transition-colors"

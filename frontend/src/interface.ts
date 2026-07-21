@@ -130,7 +130,8 @@ export interface BuilderScreenProp {
     currentItinerary: Partial<Itinerary> | undefined,
     setCurrentItinerary: Dispatch<SetStateAction<Partial<Itinerary> | undefined>>,
     locations: Location[],
-    setSelectedProvinces: Dispatch<SetStateAction<Province[]>>
+    setSelectedProvinces: Dispatch<SetStateAction<Province[]>>,
+    setLocations: Dispatch<SetStateAction<Location[]>>
 }
 
 export interface Itinerary_days {

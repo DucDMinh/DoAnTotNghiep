@@ -168,6 +168,7 @@ export const useItinerarySetup = (props: SetupScreenProp) => {
         handleSelectProvince,
         handleRemoveProvince,
         handleCreateItinerary,
-        handleSelectTemplate
+        handleSelectTemplate, fetchProvinces,
+        fetchAllSelectedLocations
     };
 };

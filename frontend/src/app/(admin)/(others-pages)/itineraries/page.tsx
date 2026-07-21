@@ -32,6 +32,7 @@ export default function ItineraryBuilderPage() {
             setCurrentItinerary={setCurrentItinerary}
             locations={locations}
             setSelectedProvinces={setSelectedProvinces}
+            setLocations={setLocations}
         />
     );
 }
