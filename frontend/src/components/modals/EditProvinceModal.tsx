@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable @next/next/no-img-element */
+import React, { useState } from "react";
 import { X, Upload } from "lucide-react";
-import { Province } from "@/interface"; // Đảm bảo import đúng đường dẫn interface của bạn
+import { Province } from "@/interface";
 
 interface EditProvinceModalProps {
     isOpen: boolean;
     onClose: () => void;
     onEdit: (submitData: FormData) => Promise<void>;
     isSaving: boolean;
-    province?: Province; // Nhận dữ liệu tỉnh đang được chọn để sửa
+    province?: Province;
 }
 
 export const EditProvinceModal: React.FC<EditProvinceModalProps> = ({
@@ -36,7 +37,7 @@ export const EditProvinceModal: React.FC<EditProvinceModalProps> = ({
         const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
-            setPreviewUrl(URL.createObjectURL(file)); // Cập nhật ảnh xem trước bằng ảnh mới chọn
+            setPreviewUrl(URL.createObjectURL(file));
         }
     };
 
@@ -48,10 +49,8 @@ export const EditProvinceModal: React.FC<EditProvinceModalProps> = ({
         if (localFormData.description) submitData.append("description", localFormData.description);
         if (localFormData.best_time_to_visit) submitData.append("best_time_to_visit", localFormData.best_time_to_visit);
         if (localFormData.height) submitData.append("height", localFormData.height);
-
-        // Nếu người dùng chọn ảnh mới thì mới gửi file lên
         if (imageFile) {
-            submitData.append("image", imageFile);
+            submitData.append("image_url", imageFile);
         }
 
         await onEdit(submitData);

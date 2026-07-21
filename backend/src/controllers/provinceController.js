@@ -39,10 +39,10 @@ class ProvinceController extends BaseController {
             }
 
             if (file) {
-                payload.img = await uploadImageToStorage(file);
+                payload.image_url = await uploadImageToStorage(file);
 
-                if (oldProvince.img) {
-                    await deleteImageFromStorage(oldProvince.img);
+                if (oldProvince.image_url) {
+                    await deleteImageFromStorage(oldProvince.image_url);
                 }
             }
 

@@ -75,7 +75,6 @@ export default function ProvincesPage() {
             supabase.removeChannel(provinceChannel);
             clearTimeout(initTimer);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
