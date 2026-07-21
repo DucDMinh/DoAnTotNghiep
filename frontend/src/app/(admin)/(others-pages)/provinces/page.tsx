@@ -136,7 +136,6 @@ export default function ProvincesPage() {
         }
     };
 
-    // === XỬ LÝ PHÂN TRANG LOGIC FRONTEND ===
     const ITEMS_PER_PAGE = 10;
     const filteredProvinces = provinces.filter((province) => {
         if (!searchQuery) return true;

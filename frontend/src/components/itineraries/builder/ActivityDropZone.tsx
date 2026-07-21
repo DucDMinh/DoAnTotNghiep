@@ -68,7 +68,7 @@ export const DroppableActivityZone = ({
 
                         const res = await fetch(url, {
                             headers: {
-                                'User-Agent': 'MyTravelApp/1.0 (daod1278@example.com)', // THAY BẰNG TÊN & EMAIL THẬT CỦA BẠN
+                                'User-Agent': 'MyTravelApp/1.0 (daod1278@example.com)',
                             },
                             signal: controller.signal,
                         });

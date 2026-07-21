@@ -10,14 +10,14 @@ class ProvinceRepository extends BaseRepository {
         const { data, error } = await supabase
             .from('provinces')
             .select('*, locations(id, name)')
-            .order('name', { ascending: true }); // Sắp xếp A-Z cho đẹp
+            .order('name', { ascending: true });
         if (error) throw error;
         return { data };
     }
     async getById(id) {
         const { data, error } = await supabase
             .from(this.tableName)
-            .select('*, locations(id, name, img, difficulty_level, lat, lng)')
+            .select('*, locations(*)')
             .eq('id', id)
             .single();
         if (error) throw error;
