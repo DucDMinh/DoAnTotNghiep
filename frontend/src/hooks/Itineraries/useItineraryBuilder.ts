@@ -1,4 +1,4 @@
-// file: hooks/useItineraryBuilder.ts
+
 import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
 import { useState } from "react";
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';

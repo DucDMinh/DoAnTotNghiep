@@ -1,58 +1,26 @@
-import { Itinerary, Province, SetupScreenProp, Location } from "@/interface";
+import { useItinerarySetup } from "@/hooks/Itineraries/useItinerarySetup";
+import { SetupScreenProp } from "@/interface";
 import { motion } from "framer-motion";
-import { Sparkles, Search, Compass, ChevronRight, MapPin, X } from "lucide-react"
+import { Sparkles, Search, Compass, ChevronRight, MapPin, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 
+export const SetupScreen: React.FC<SetupScreenProp> = (props) => {
+    const { selectedProvinces, step } = props;
+    const {
+        isDropdownOpen, setIsDropdownOpen,
+        searchProvince, setSearchProvince,
+        templates,
+        isLoading,
+        filteredProvinces,
+        handleSelectProvince,
+        handleRemoveProvince,
+        handleCreateItinerary,
+        handleSelectTemplate
+    } = useItinerarySetup(props);
 
-export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setSelectedProvinces, setLocations, setStep, setCurrentItinerary, step }) => {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [searchProvince, setSearchProvince] = useState("");
-    const [provincesData, setProvincesData] = useState<Province[]>([]);
     const [visibleCount, setVisibleCount] = useState(3);
     const loaderRef = useRef<HTMLDivElement | null>(null);
-    const [templates, setTemplates] = useState<Itinerary[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const fetchProvinces = async () => {
-        try {
-            const response = await fetch("http://localhost:8000/provinces");
-            const result = await response.json();
 
-            if (result.success && result.data) {
-                setProvincesData(result.data);
-            } else if (Array.isArray(result)) {
-                setProvincesData(result);
-            }
-        } catch (error) {
-            console.error("Error fetching provinces:", error);
-            toast.error("Không thể tải danh sách tỉnh/thành phố.");
-        }
-    }
-    const fetchAllSelectedLocations = async (provinceIds: string[]) => {
-        if (provinceIds.length === 0) {
-            setLocations([]);
-            return;
-        }
-
-        try {
-            const fetchPromises = provinceIds.map(id =>
-                fetch(`http://localhost:8000/provinces/${id}`).then(res => res.json())
-            );
-            const results = await Promise.all(fetchPromises);
-            let combinedLocations: Location[] = [];
-
-            results.forEach(result => {
-                if (result.data && result.data.locations) {
-                    combinedLocations = [...combinedLocations, ...result.data.locations];
-                }
-            });
-            setLocations(combinedLocations);
-
-        } catch (error) {
-            console.error("Error fetching locations:", error);
-            toast.error("Không thể tải danh sách địa điểm.");
-        }
-    }
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
@@ -63,69 +31,9 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
             { root: null, rootMargin: "20px", threshold: 0 }
         );
 
-        if (loaderRef.current) {
-            observer.observe(loaderRef.current);
-        }
-
+        if (loaderRef.current) observer.observe(loaderRef.current);
         return () => observer.disconnect();
     }, [step, visibleCount, templates.length]);
-
-    const fetchItineraryData = async () => {
-        try {
-            setIsLoading(true);
-            const response = await fetch(`http://localhost:8000/itineraries`);
-            const result = await response.json();
-
-            console.log("Dữ liệu Itineraries trả về:", result);
-
-            if (result.success && Array.isArray(result.data)) {
-                setTemplates(result.data);
-            }
-            else if (result.success && result.data && Array.isArray(result.data.data)) {
-                setTemplates(result.data.data);
-            }
-            else if (Array.isArray(result)) {
-                setTemplates(result);
-            }
-            else if (result.data && Array.isArray(result.data)) {
-                setTemplates(result.data);
-            }
-            else {
-                console.error("Dữ liệu trả về không phải là mảng:", result);
-                setTemplates([]);
-            }
-        } catch (error) {
-            console.error("Error fetching itinerary data:", error);
-            toast.error("Không thể tải dữ liệu lộ trình mẫu.");
-            setTemplates([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        setTimeout(() => {
-            if (step === "SETUP") {
-                fetchProvinces();
-                fetchItineraryData();
-            }
-        }, 0);
-    }, [step]);
-
-    const handleSelectProvince = (province: { id: string, name: string, image_url: string | "" }) => {
-        if (!selectedProvinces.find(p => p.id === province.id)) {
-            setSelectedProvinces([...selectedProvinces, province]);
-        }
-        setSearchProvince("");
-        setIsDropdownOpen(false);
-    };
-    const handleRemoveProvince = (id: string) => {
-        setSelectedProvinces(selectedProvinces.filter(p => p.id !== id));
-    };
-    const filteredProvinces = provincesData?.filter(province =>
-        province.name.toLowerCase().includes(searchProvince.toLowerCase()) &&
-        !selectedProvinces.some(selected => selected.id === province.id)
-    );
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 md:p-12 font-sans flex flex-col items-center justify-start">
             <div className="w-full max-w-4xl text-center mb-12 mt-10">
@@ -139,6 +47,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                     Hãy chọn một hoặc nhiều tỉnh thành, hoặc bắt đầu nhanh bằng một lộ trình mẫu.
                 </motion.p>
             </div>
+
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-3xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 mb-16 flex flex-col md:flex-row gap-4 items-center relative">
                 <div className="flex flex-wrap items-center gap-2 p-2 min-h-[60px] bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all w-full md:flex-1">
                     <Search className="h-5 w-5 text-gray-400 ml-2 shrink-0" />
@@ -171,9 +80,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                 filteredProvinces.map((province) => (
                                     <button
                                         key={province.id}
-                                        onClick={() => {
-                                            handleSelectProvince({ id: province.id, name: province.name, image_url: province.image_url ?? "" })
-                                        }}
+                                        onClick={() => handleSelectProvince({ id: province.id, name: province.name, image_url: province.image_url ?? "" })}
                                         className="w-full text-left px-4 py-3 flex items-center hover:bg-brand-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 font-medium transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-none focus:bg-brand-50 focus:outline-none"
                                     >
                                         <MapPin className="h-4 w-4 mr-2 text-gray-400" />
@@ -186,31 +93,21 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                 </div>
                             )}
                         </div>
-                        {filteredProvinces && filteredProvinces.length > 0 && (
-                            <div className="bg-gray-50 dark:bg-gray-900/50 px-4 py-2 text-xs text-gray-400 text-center border-t border-gray-100 dark:border-gray-800">
-                                Nhấn để chọn tỉnh thành vào lộ trình
-                            </div>
-                        )}
                     </div>
                 )}
+
                 <button
                     disabled={selectedProvinces.length === 0}
-                    onClick={() => {
-                        setStep("BUILDER");
-                        const idsToFetch = selectedProvinces.map(p => p.id);
-                        fetchAllSelectedLocations(idsToFetch);
-                    }}
-                    className={`
-        w-full md:w-auto shrink-0 px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all
-        ${selectedProvinces.length === 0
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600"
-                            : "bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95"
-                        }
-    `}
+                    onClick={handleCreateItinerary}
+                    className={`w-full md:w-auto shrink-0 px-8 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${selectedProvinces.length === 0
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600"
+                        : "bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-500/30 hover:scale-105 active:scale-95"
+                        }`}
                 >
                     Tạo Lộ Trình <ChevronRight className="h-5 w-5" />
                 </button>
             </motion.div>
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="w-full max-w-6xl">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -230,56 +127,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                         {templates.filter((tpl) => tpl.share === true).slice(0, visibleCount).map((tpl) => (
                             <div
                                 key={tpl.id}
-                                onClick={async () => {
-                                    const toastId = toast.loading("Đang tải dữ liệu lộ trình...");
-                                    try {
-                                        const response = await fetch(`http://localhost:8000/itineraries/${tpl.id}`);
-                                        const result = await response.json();
-
-                                        if (result.success && result.data) {
-                                            const data = result.data.data;
-                                            setCurrentItinerary({
-                                                id: data.id,
-                                                title: data.title || "",
-                                                theme: data.theme || "",
-                                                summary: data.summary || "",
-                                                start_date: data.start_date || "",
-                                                end_date: data.end_date || "",
-                                                image_url: data.image_url || "",
-                                                itinerary_days: data.itinerary_days || []
-                                            });
-                                            let idsToFetch: string[] = [];
-
-                                            if (data.itinerary_provinces && data.itinerary_provinces.length > 0) {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const provincesList = data.itinerary_provinces.map((item: any) => {
-                                                    const prov = item.provinces || item;
-                                                    return {
-                                                        id: prov.id || prov.province_id,
-                                                        name: prov.name || "",
-                                                        image_url: prov.image_url ?? ""
-                                                    };
-                                                });
-                                                setSelectedProvinces(provincesList);
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                idsToFetch = provincesList.map((p: any) => p.id);
-
-                                            } else {
-                                                setSelectedProvinces([]);
-                                                idsToFetch = [];
-                                            }
-                                            fetchAllSelectedLocations(idsToFetch);
-
-                                            toast.success("Tải dữ liệu thành công!", { id: toastId });
-                                            setStep("BUILDER");
-                                        } else {
-                                            toast.error("Không tìm thấy dữ liệu chi tiết.", { id: toastId });
-                                        }
-                                    } catch (error) {
-                                        console.error("Lỗi khi tải chi tiết lộ trình:", error);
-                                        toast.error("Lỗi kết nối máy chủ.", { id: toastId });
-                                    }
-                                }}
+                                onClick={() => handleSelectTemplate(tpl)}
                                 className="group cursor-pointer bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all duration-300 hover:border-brand-300 dark:hover:border-brand-700 flex flex-row h-32 sm:h-36"
                             >
                                 <div className="w-32 sm:w-48 overflow-hidden relative shrink-0">
@@ -319,6 +167,7 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                                 </div>
                             </div>
                         ))}
+
                         {visibleCount < templates.length && (
                             <div ref={loaderRef} className="py-6 flex justify-center items-center w-full">
                                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 animate-pulse font-medium">
@@ -331,5 +180,5 @@ export const SetupScreen: React.FC<SetupScreenProp> = ({ selectedProvinces, setS
                 )}
             </motion.div>
         </div>
-    )
-}
+    );
+};
