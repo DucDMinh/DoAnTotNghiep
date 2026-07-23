@@ -1,15 +1,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import Router from '@koa/router';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-
 import { supabase } from './config/supabaseClient.js';
 import routes from './routes/routes.js';
+import authRoutes from './routes/auth.routes.js';
 
 const app = new Koa();
 const router = new Router();
@@ -103,6 +102,7 @@ router.get('/extract-map', async (ctx) => {
         ctx.body = { error: 'Lỗi máy chủ khi trích xuất dữ liệu' };
     }
 });
+app.use(authRoutes.routes()).use(authRoutes.allowedMethods());
 app.use(routes.routes()).use(routes.allowedMethods());
 app.use(router.routes()).use(router.allowedMethods());
 const PORT = process.env.PORT || 8080;

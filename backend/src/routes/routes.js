@@ -3,6 +3,7 @@ import multer from '@koa/multer';
 import * as provinceController from '../controllers/provinceController.js';
 import * as locationController from '../controllers/locationController.js';
 import * as itineraryController from '../controllers/itineraryController.js';
+import { verifyToken } from "../middleware/auth.middleware.js"
 
 const router = new Router();
 const upload = multer();
@@ -18,7 +19,7 @@ router.post('/provinces', upload.single('image'), provinceController.createProvi
 router.delete('/provinces/:id', provinceController.deleteProvince);
 router.put('/provinces/:id', upload.single('image_url'), provinceController.updateProvince);
 
-router.post('/itineraries', upload.single('image'), itineraryController.createItinerary);
+router.post('/itineraries', verifyToken, upload.single('image'), itineraryController.createItinerary);
 router.get('/itineraries', itineraryController.getAllItineraries);
 router.get('/itineraries/:id', itineraryController.getItineraryById);
 router.put('/itineraries/:id', upload.single('image'), itineraryController.updateItinerary);
