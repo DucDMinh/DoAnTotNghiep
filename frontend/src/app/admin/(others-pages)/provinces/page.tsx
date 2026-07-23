@@ -23,7 +23,6 @@ export default function ProvincesPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isListModalOpen, setIsListModalOpen] = useState(false);
 
-    // === CÁC HÀM XỬ LÝ LOGIC ===
     const executeDelete = async (id: string, name: string) => {
         const toastId = toast.loading(`Đang vô hiệu hóa "${name}"...`);
         try {
@@ -148,13 +147,11 @@ export default function ProvincesPage() {
         currentPage * ITEMS_PER_PAGE
     );
 
-    // === RENDER GIAO DIỆN ===
     return (
         <div className="min-h-screen pb-12">
             <PageBreadcrumb pageTitle="Quản lý Tỉnh/Thành phố" />
             <Toaster position="top-right" reverseOrder={false} />
 
-            {/* Banner giới thiệu */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -191,8 +188,6 @@ export default function ProvincesPage() {
                     </button>
                 </div>
             </motion.div>
-
-            {/* Thanh công cụ và Bảng */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -293,7 +288,6 @@ export default function ProvincesPage() {
                 </div>
             </motion.div>
 
-            {/* Modals */}
             <AnimatePresence>
                 {isAddModalOpen && (
                     <AddProvinceModal

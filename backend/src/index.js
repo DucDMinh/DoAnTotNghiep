@@ -14,9 +14,9 @@ const app = new Koa();
 const router = new Router();
 
 app.use(cors({
-    origin: 'http://localhost:3000',
-    credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    origin: '*',
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
 app.use(bodyParser());
 router.get('/get-province-from-coords', async (ctx) => {
