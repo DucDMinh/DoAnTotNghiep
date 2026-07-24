@@ -21,3 +21,16 @@ export const verifyToken = async (ctx, next) => {
         ctx.body = { success: false, message: "Token không hợp lệ hoặc đã hết hạn!" };
     }
 };
+
+export const requireAdmin = async (ctx, next) => {
+    const user = ctx.state.user;
+    if (!user || user.role !== 'admin') {
+        ctx.status = 403;
+        ctx.body = {
+            success: false,
+            message: "Từ chối truy cập: Bạn không có quyền Quản trị viên!"
+        };
+        return;
+    }
+    await next();
+};
