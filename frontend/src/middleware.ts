@@ -8,11 +8,12 @@ export function middleware(request: NextRequest) {
 
     const token = request.cookies.get('accessToken')?.value;
     if (hostname === 'admin.localhost') {
-        if (url.pathname === '/signin') {
-            return NextResponse.next();
+        if (url.pathname.startsWith('/auth/signin')) {
+            const targetPath = `/admin${url.pathname}`;
+            return NextResponse.rewrite(new URL(targetPath, request.url));
         }
         if (!token) {
-            const loginUrl = new URL('/signin', request.url);
+            const loginUrl = new URL('/auth/signin', request.url);
             return NextResponse.redirect(loginUrl);
         }
         const targetPath = url.pathname === '/' ? '/admin' : `/admin${url.pathname}`;
