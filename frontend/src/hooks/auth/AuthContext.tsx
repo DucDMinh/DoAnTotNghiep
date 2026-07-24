@@ -6,7 +6,7 @@ interface User {
     id: string;
     name: string;
     email: string;
-    avatar?: string;
+    avatar?: string | '';
     role?: string
 }
 
@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(userData);
         localStorage.setItem("accessToken", newToken);
         localStorage.setItem("userData", JSON.stringify(userData));
+        document.cookie = `accessToken=${newToken}; path=/; max-age=604800; SameSite=Lax`;
     };
 
     const logout = () => {
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("userData");
+        document.cookie = "accessToken=; path=/; max-age=0";
         toast.success("Đã đăng xuất thành công!");
     };
 

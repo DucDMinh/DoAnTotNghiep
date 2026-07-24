@@ -23,10 +23,11 @@ authRoutes.post('/register', async (ctx) => {
         }
         const salt = await bcrypt.genSalt(10);
         const password_hash = await bcrypt.hash(password, salt);
+        const role = "USER"
         const { data: newUser, error } = await supabase
             .from('users')
-            .insert([{ name, email, password_hash }])
-            .select('id, name, email')
+            .insert([{ name, email, password_hash, role }])
+            .select('id, name, email, role')
             .single();
 
         if (error) throw error;
