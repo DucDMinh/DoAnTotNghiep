@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtDecode } from 'jwt-decode';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const url = request.nextUrl;
     const hostHeader = request.headers.get('host') || '';
     const hostname = hostHeader.split(':')[0];
@@ -12,10 +14,23 @@ export function middleware(request: NextRequest) {
             const targetPath = `/admin${url.pathname}`;
             return NextResponse.rewrite(new URL(targetPath, request.url));
         }
+
         if (!token) {
             const loginUrl = new URL('/auth/signin', request.url);
             return NextResponse.redirect(loginUrl);
         }
+
+        try {
+            const decoded: any = jwtDecode(token);
+            if (decoded.role !== 'ADMIN') {
+                return NextResponse.redirect(new URL('http://localhost:3000/'));
+            }
+        } catch (err) {
+            console.log("Lỗi cmnr: ", err)
+            const loginUrl = new URL('/auth/signin', request.url);
+            return NextResponse.redirect(loginUrl);
+        }
+
         const targetPath = url.pathname === '/' ? '/admin' : `/admin${url.pathname}`;
         return NextResponse.rewrite(new URL(targetPath, request.url));
     }

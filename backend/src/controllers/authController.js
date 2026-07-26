@@ -32,7 +32,15 @@ export async function createUser(ctx) {
             .select('id, name, email, role')
             .single();
         if (error) throw error;
-        const token = jwt.sign({ id: newUser.id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign(
+            {
+                id: newUser.id,
+                email: newUser.email,
+                role: newUser.role || 'USER'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
         ctx.status = 201;
         ctx.body = { success: true, message: "Đăng ký thành công!", token, user: newUser };
@@ -65,7 +73,15 @@ export async function login(ctx) {
             ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
             return;
         }
-        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role || 'USER'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
 
         delete user.password_hash;
 
