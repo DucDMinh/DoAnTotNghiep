@@ -12,8 +12,19 @@ import routes from './routes/index.js';
 const app = new Koa();
 const router = new Router();
 
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://admin.localhost:3000'
+];
 app.use(cors({
-    origin: '*',
+    origin: (ctx) => {
+        const requestOrigin = ctx.request.header.origin;
+        if (allowedOrigins.includes(requestOrigin)) {
+            return requestOrigin;
+        }
+        return 'http://localhost:3000';
+    },
+    credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));

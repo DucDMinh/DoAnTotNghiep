@@ -10,7 +10,6 @@ class ProvinceController extends BaseController {
         try {
             const payload = { ...ctx.request.body };
             const file = ctx.request.file;
-            console.log("Received file:", file);
             if (file) {
                 const imageUrl = await uploadImageToStorage(file, 'provinces');
                 payload.image_url = imageUrl;

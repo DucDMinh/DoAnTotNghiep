@@ -10,6 +10,7 @@ import { AddProvinceModal } from "@/components/modals/AddProvinceModal";
 import { EditProvinceModal } from "@/components/modals/EditProvinceModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { ListLocationsModal } from "@/components/modals/ListLocationsModal";
+import { api } from "@/lib/apiClient";
 
 export default function ProvincesPage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -26,10 +27,11 @@ export default function ProvincesPage() {
     const executeDelete = async (id: string, name: string) => {
         const toastId = toast.loading(`Đang vô hiệu hóa "${name}"...`);
         try {
-            const response = await fetch(`http://localhost:8000/provinces/${id}`, {
-                method: "DELETE"
-            });
-            if (!response.ok) throw new Error("Lỗi khi xóa");
+            const { response, data } = await api.delete(`/provinces/${id}`);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Lỗi khi xóa tỉnh thành");
+            }
 
             toast.success(`Đã xóa "${name}" thành công!`, { id: toastId });
             sessionStorage.removeItem("provinces_cache");
@@ -86,12 +88,11 @@ export default function ProvincesPage() {
         const toastId = toast.loading("Đang thiết lập tỉnh/thành phố lên hệ thống...");
 
         try {
-            const response = await fetch("http://localhost:8000/provinces", {
-                method: "POST",
-                body: submitData,
-            });
+            const { response, data } = await api.post("/provinces", submitData);
 
-            if (!response.ok) throw new Error("Lỗi khi thêm tỉnh/thành phố");
+            if (!response.ok) {
+                throw new Error(data.message || "Lỗi khi thêm tỉnh thành");
+            }
 
             toast.success("Khởi tạo không gian thành công!", { id: toastId });
             setIsAddModalOpen(false);
@@ -115,12 +116,11 @@ export default function ProvincesPage() {
         const toastId = toast.loading("Đang tái cấu trúc tỉnh/thành phố...");
 
         try {
-            const response = await fetch(`http://localhost:8000/provinces/${pickProvince.id}`, {
-                method: "PUT",
-                body: submitData,
-            });
+            const { response, data } = await api.put(`/provinces/${pickProvince.id}`, submitData);
 
-            if (!response.ok) throw new Error("Lỗi khi cập nhật");
+            if (!response.ok) {
+                throw new Error(data.message || "Lỗi khi sửa địa điểm");
+            }
 
             toast.success("Cập nhật tọa độ thành công!", { id: toastId });
             setIsEditModalOpen(false);

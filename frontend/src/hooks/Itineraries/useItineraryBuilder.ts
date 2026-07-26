@@ -5,6 +5,7 @@ import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import toast from "react-hot-toast";
 import { v4 as uuidv4 } from 'uuid';
 import React from "react";
+import { api } from "@/lib/apiClient";
 
 export const useItineraryBuilder = (props: BuilderScreenProp) => {
     const { currentItinerary, selectedProvinces, setStep } = props;
@@ -331,12 +332,11 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         const toastId = toast.loading("Đang lưu lộ trình...");
         try {
             console.log("submitData", Object.fromEntries(submitData.entries()));
-            const response = await fetch("http://localhost:8000/itineraries", {
-                method: "POST",
-                body: submitData
-            });
+            const { response, data } = await api.post("/itineraries", submitData);
 
-            if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
+            if (!response.ok) {
+                throw new Error(data.message || "Lỗi khi thêm lịch trình");
+            }
 
             toast.success("Lưu lộ trình thành công!", { id: toastId });
 

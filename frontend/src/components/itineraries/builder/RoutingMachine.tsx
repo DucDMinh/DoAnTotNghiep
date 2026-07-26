@@ -41,13 +41,7 @@ export default function RoutingMachine({ points }: RoutingMachineProps) {
             try {
                 // 1. Xóa các điểm dừng để dọn dẹp layers hiện tại
                 routingControl.getPlan().setWaypoints([]);
-
-                // 2. Gỡ bỏ bộ định tuyến khỏi bản đồ (Lúc này thư viện sẽ set routingControl._map = null)
                 map.removeControl(routingControl);
-
-                // 🌟 3. BÙA CHỐNG CRASH TỐI THƯỢNG:
-                // Bơm một _map "giả" vào thư viện. 
-                // Nếu API trả về trễ và cố gắng gọi các hàm của Leaflet, nó sẽ gọi vào các hàm rỗng này thay vì gọi vào null.
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (routingControl as any)._map = {
                     removeLayer: () => { },
@@ -62,8 +56,6 @@ export default function RoutingMachine({ points }: RoutingMachineProps) {
                 console.warn("Lỗi dọn dẹp bản đồ (đã an toàn bỏ qua):", error);
             }
         };
-
-        // 🌟 4. DÙNG JSON.stringify ĐỂ NGĂN BẢN ĐỒ RENDER LIÊN TỤC GÂY LỖI
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [map, JSON.stringify(points)]);
 

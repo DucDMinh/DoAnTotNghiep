@@ -10,6 +10,7 @@ import type { Location } from "@/interface";
 import { EditLocationModal } from "@/components/modals/editLocation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/dist/client/components/navigation";
+import { api } from "@/lib/apiClient";
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -187,11 +188,11 @@ export default function LocationsPage() {
     const toastId = toast.loading(`Đang vô hiệu hóa "${name}"...`);
 
     try {
-      const response = await fetch(`http://localhost:8000/locations/${id}`, {
-        method: "DELETE"
-      });
+      const { response, data } = await api.delete(`/locations/${id}`);
 
-      if (!response.ok) throw new Error("Lỗi khi xóa");
+      if (!response.ok) {
+        throw new Error(data.message || "Lỗi khi xóa địa điểm");
+      }
 
       toast.success(`Đã xóa "${name}" thành công!`, { id: toastId });
       sessionStorage.removeItem("locations_cache");
@@ -324,12 +325,11 @@ export default function LocationsPage() {
     if (imageFile) submitData.append("image", imageFile);
 
     try {
-      const response = await fetch("http://localhost:8000/locations", {
-        method: "POST",
-        body: submitData,
-      });
+      const { response, data } = await api.post("/locations", submitData);
 
-      if (!response.ok) throw new Error("Lỗi khi thêm địa điểm");
+      if (!response.ok) {
+        throw new Error(data.message || "Lỗi khi thêm địa điểm");
+      }
 
       toast.success("Khởi tạo không gian thành công!", { id: toastId });
 
@@ -370,12 +370,11 @@ export default function LocationsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/locations/${pickLocation.id}`, {
-        method: "PUT",
-        body: submitData,
-      });
+      const { response, data } = await api.put(`/locations/${pickLocation.id}`, submitData);
 
-      if (!response.ok) throw new Error("Lỗi khi cập nhật");
+      if (!response.ok) {
+        throw new Error(data.message || "Lỗi khi sửa địa điểm");
+      }
 
       toast.success("Cập nhật tọa độ thành công!", { id: toastId });
 

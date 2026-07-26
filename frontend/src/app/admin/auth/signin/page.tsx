@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/auth/AuthContext";
+import { api } from "@/lib/apiClient";
 
 export default function AdminSignInScreen() {
   const router = useRouter();
@@ -39,26 +40,22 @@ export default function AdminSignInScreen() {
     const toastId = toast.loading("Đang xác thực...");
 
     try {
-      const response = await fetch("http://localhost:8000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+      const { response, data } = await api.post("/auth/login", { email, password });
+      if (response.ok && (data.success || data.token)) {
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        if (result.user?.role !== "ADMIN") {
+        const userRole = data.user?.role?.toUpperCase();
+        if (userRole !== "ADMIN") {
           toast.error("Tài khoản không có quyền Quản trị viên!", { id: toastId });
           setError("Bạn không có quyền truy cập vào khu vực này.");
           return;
         }
 
         toast.success("Đăng nhập thành công! Đang chuyển hướng...", { id: toastId });
-        login(result.token, result.user);
-        router.push("/");
+
+        login(data.token, data.user);
+        window.location.href = "/";
       } else {
-        const message = result.message || "Email hoặc mật khẩu không đúng.";
+        const message = data.message || "Email hoặc mật khẩu không đúng.";
         toast.error(message, { id: toastId });
         setError(message);
       }

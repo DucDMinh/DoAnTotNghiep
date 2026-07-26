@@ -23,6 +23,17 @@ class UserRepository extends BaseRepository {
         if (error) throw error;
         return data;
     }
+    async checkExistEmail(email) {
+        const { data } = await supabase
+            .from('user')
+            .select('*')
+            .eq('email', email)
+            .single()
+        if (data) {
+            return true;
+        }
+        return false
+    }
 }
 
 export const userRepo = new UserRepository();
