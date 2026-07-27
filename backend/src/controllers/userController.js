@@ -1,6 +1,6 @@
 import { BaseController } from './baseController.js';
 import { userRepo } from '../repositories/userRepository.js';
-import { uploadImageToStorage } from '../helpers/uploadHelper.js'
+import { uploadImageToStorage, deleteImageFromStorage } from '../helpers/uploadHelper.js';
 import bcrypt from 'bcryptjs';
 
 class UserController extends BaseController {
@@ -48,6 +48,30 @@ class UserController extends BaseController {
                 message: `Lỗi hệ thống khi tạo ${this.itemName}`,
                 error_detail: error.message
             };
+        }
+    }
+
+    delete = async (ctx) => {
+        try {
+            const id = ctx.params.id;
+            const response = await this.repository.getById(id);
+            if (!response) {
+                ctx.status = 400;
+                ctx.body = {
+                    success: false,
+                    message: 'Người dùng không tồn tại'
+                }
+                return;
+            }
+            const data = await this.repository.delete(id);
+            if (data && response.avatar) {
+                await deleteImageFromStorage(response.avatar)
+            }
+            ctx.status = 200;
+            ctx.body = { success: true, message: `Xóa ${this.itemName} và dọn dẹp ảnh thành công`, data };
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống khi xóa ${this.itemName}`, error_detail: error.message };
         }
     }
 }

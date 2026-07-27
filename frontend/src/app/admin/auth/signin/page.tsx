@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,7 +18,6 @@ import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
 
 export default function AdminSignInScreen() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

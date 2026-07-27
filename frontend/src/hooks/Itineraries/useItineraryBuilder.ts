@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { v4 as uuidv4 } from 'uuid';
 import React from "react";
 import { api } from "@/lib/apiClient";
+import { useAuth } from "@/hooks/auth/AuthContext";
 
 export const useItineraryBuilder = (props: BuilderScreenProp) => {
     const { currentItinerary, selectedProvinces, setStep } = props;
@@ -304,7 +305,10 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         }));
     };
 
+    const { user } = useAuth();
+
     const handleAddItinerary = async () => {
+
         const submitData = new FormData();
         if (currentItinerary?.title) submitData.append('title', currentItinerary.title);
         if (currentItinerary?.theme) submitData.append('theme', currentItinerary.theme);
@@ -328,7 +332,9 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         if (selectedProvinces && selectedProvinces.length > 0) {
             submitData.append('itinerary_provinces', JSON.stringify(selectedProvinces));
         }
-
+        if (user?.id) {
+            submitData.append('user_id', user.id);
+        }
         const toastId = toast.loading("Đang lưu lộ trình...");
         try {
             console.log("submitData", Object.fromEntries(submitData.entries()));

@@ -4,7 +4,7 @@ import { uploadImageToStorage, deleteImageFromStorage } from '../helpers/uploadH
 
 class ProvinceController extends BaseController {
     constructor() {
-        super(provinceRepo, "Địa điểm");
+        super(provinceRepo, "Tỉnh thành");
     }
     create = async (ctx) => {
         try {
@@ -36,17 +36,13 @@ class ProvinceController extends BaseController {
                 ctx.body = { success: false, message: `Không tìm thấy ${this.itemName} để cập nhật!` };
                 return;
             }
-
             if (file) {
                 payload.image_url = await uploadImageToStorage(file);
-
                 if (oldProvince.image_url) {
                     await deleteImageFromStorage(oldProvince.image_url);
                 }
             }
-
             const data = await this.repository.update(id, payload);
-
             ctx.status = 200;
             ctx.body = { success: true, message: `Cập nhật ${this.itemName} thành công`, data };
         } catch (error) {
@@ -57,38 +53,21 @@ class ProvinceController extends BaseController {
     delete = async (ctx) => {
         try {
             const id = ctx.params.id;
-
             const oldProvince = await this.repository.getById(id);
             if (!oldProvince) {
                 ctx.status = 404;
                 ctx.body = { success: false, message: `Không tìm thấy ${this.itemName} để xóa!` };
                 return;
             }
-
             const data = await this.repository.delete(id);
-
             if (data && oldProvince.img) {
                 await deleteImageFromStorage(oldProvince.img);
             }
-
             ctx.status = 200;
             ctx.body = { success: true, message: `Xóa ${this.itemName} và dọn dẹp ảnh thành công`, data };
         } catch (error) {
             ctx.status = 500;
             ctx.body = { success: false, message: `Lỗi hệ thống khi xóa ${this.itemName}`, error_detail: error.message };
-        }
-    }
-    getAll = async (ctx) => {
-        try {
-            const { data } = await this.repository.getAll();
-            ctx.status = 200;
-            ctx.body = {
-                success: true,
-                data: data,
-            };
-        } catch (error) {
-            ctx.status = 500;
-            ctx.body = { success: false, message: `Lỗi hệ thống khi lấy danh sách ${this.itemName}`, error_detail: error.message };
         }
     }
 }

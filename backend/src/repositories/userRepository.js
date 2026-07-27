@@ -9,7 +9,7 @@ class UserRepository extends BaseRepository {
     async getAll() {
         const { data, error } = await supabase
             .from('users')
-            .select('*, itineraries(title, theme)')
+            .select('*, itineraries(id, title, theme)')
             .order('created_at', { ascending: true });
         if (error) throw error;
         return { data };

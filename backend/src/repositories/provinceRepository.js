@@ -12,7 +12,7 @@ class ProvinceRepository extends BaseRepository {
             .select('*, locations(id, name)')
             .order('name', { ascending: true });
         if (error) throw error;
-        return { data };
+        return data;
     }
     async getById(id) {
         const { data, error } = await supabase
