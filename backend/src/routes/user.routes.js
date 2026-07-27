@@ -10,6 +10,6 @@ router.post('/', upload.single('avatar'), userController.createUser);
 router.get('/', verifyToken, requireAdmin, userController.getAllUser);
 router.get('/:id', verifyToken, userController.getUserById);
 router.delete('/:id', verifyToken, requireAdmin, userController.deleteUser);
-router.put('/:id', verifyToken, upload.single('avatar'), userController.updateUser);
+router.patch('/:id', verifyToken, upload.single('avatar'), userController.updateUser);
 
 export default router

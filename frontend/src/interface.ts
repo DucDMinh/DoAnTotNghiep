@@ -156,3 +156,15 @@ export interface Itinerary_locations {
     lat: number;
     lng: number;
 }
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    status: "active" | "inactive";
+    created_at: string;
+    avatar?: string;
+    itineraries: Itinerary[];
+    phone_number: number;
+}
+export type UserRole = "ADMIN" | "USER";

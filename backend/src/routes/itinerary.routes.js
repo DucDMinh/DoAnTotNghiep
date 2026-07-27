@@ -9,7 +9,7 @@ const upload = multer();
 router.get('/', itineraryController.getAllItineraries);
 router.get('/:id', itineraryController.getItineraryById);
 router.post('/', verifyToken, upload.single('image'), itineraryController.createItinerary);
-router.put('/:id', verifyToken, upload.single('image'), itineraryController.updateItinerary);
+router.patch('/:id', verifyToken, upload.single('image'), itineraryController.updateItinerary);
 router.delete('/:id', verifyToken, itineraryController.deleteItinerary);
 
 export default router;

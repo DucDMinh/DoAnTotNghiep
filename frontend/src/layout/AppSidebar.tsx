@@ -39,6 +39,10 @@ const navItems: NavItem[] = [
     icon: <TableIcon />,
     name: "Lộ trình",
     path: "/itineraries",
+  }, {
+    icon: <TableIcon />,
+    name: "Người dùng",
+    path: "/users",
   },
 ];
 

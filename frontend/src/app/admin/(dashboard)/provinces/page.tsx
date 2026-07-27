@@ -116,7 +116,7 @@ export default function ProvincesPage() {
         const toastId = toast.loading("Đang tái cấu trúc tỉnh/thành phố...");
 
         try {
-            const { response, data } = await api.put(`/provinces/${pickProvince.id}`, submitData);
+            const { response, data } = await api.patch(`/provinces/${pickProvince.id}`, submitData);
 
             if (!response.ok) {
                 throw new Error(data.message || "Lỗi khi sửa địa điểm");

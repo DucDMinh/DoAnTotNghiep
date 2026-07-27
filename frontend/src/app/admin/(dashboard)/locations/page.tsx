@@ -370,7 +370,7 @@ export default function LocationsPage() {
     }
 
     try {
-      const { response, data } = await api.put(`/locations/${pickLocation.id}`, submitData);
+      const { response, data } = await api.patch(`/locations/${pickLocation.id}`, submitData);
 
       if (!response.ok) {
         throw new Error(data.message || "Lỗi khi sửa địa điểm");

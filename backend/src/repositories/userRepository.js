@@ -24,15 +24,17 @@ class UserRepository extends BaseRepository {
         return data;
     }
     async checkExistEmail(email) {
-        const { data } = await supabase
-            .from('user')
-            .select('*')
+        const { data, error } = await supabase
+            .from('users')
+            .select('id')
             .eq('email', email)
-            .single()
-        if (data) {
-            return true;
+            .maybeSingle();
+        if (error) {
+            console.error("Lỗi khi kiểm tra email tồn tại:", error.message);
+            return false;
         }
-        return false
+
+        return !!data;
     }
 }
 

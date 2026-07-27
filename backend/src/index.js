@@ -25,7 +25,7 @@ app.use(cors({
         return 'http://localhost:3000';
     },
     credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', `PATCH`],
     allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
 app.use(bodyParser());
