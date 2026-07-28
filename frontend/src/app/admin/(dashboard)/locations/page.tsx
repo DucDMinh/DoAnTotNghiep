@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
-import { AddLocationModal } from "@/components/modals/addLocation";
+import { AddLocationModal } from "@/components/modals/admin/addLocation";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, MapPin, Search, Filter, Globe, Sparkles, Map } from "lucide-react";
-import { LocationTable } from "@/components/tables/locationsTable";
+import { LocationTable } from "@/components/tables/admin/locationsTable";
 import type { Location } from "@/interface";
-import { EditLocationModal } from "@/components/modals/editLocation";
+import { EditLocationModal } from "@/components/modals/admin/editLocation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/dist/client/components/navigation";
 import { api } from "@/lib/apiClient";

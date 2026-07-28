@@ -1,10 +1,12 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
     Search,
     Pencil,
@@ -28,6 +30,21 @@ import { User, UserRole } from "@/interface";
 import { supabase } from "@/utils/supabaseClient";
 
 
+const userFormSchema = z.object({
+    name: z.string().min(2, "Họ và tên phải có ít nhất 2 ký tự"),
+    email: z.string().email("Email không đúng định dạng"),
+    phone_number: z
+        .string()
+        .regex(/^\d*$/, "Số điện thoại chỉ được chứa chữ số")
+        .optional()
+        .or(z.literal("")),
+    password: z.string().optional(),
+    role: z.enum(["ADMIN", "USER"]),
+    status: z.enum(["active", "inactive"]),
+});
+
+type UserFormValues = z.infer<typeof userFormSchema>;
+
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string }> = {
     ADMIN: {
         label: "Quản trị viên",
@@ -42,6 +59,7 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bg: string }
 };
 
 export default function UserManagementPage() {
+
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -49,24 +67,34 @@ export default function UserManagementPage() {
     const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone_number: "",
-        password: "",
-        role: "USER" as UserRole,
-        status: "active" as "active" | "inactive",
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting: isFormSubmitting },
+    } = useForm<UserFormValues>({
+        resolver: zodResolver(userFormSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            phone_number: "",
+            password: "",
+            role: "USER",
+            status: "active",
+        },
     });
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await api.get("/users");
+            const { data } = await api.get(`/users?_t=${Date.now()}`);
             let rawUsers: any[] = [];
             if (data.success && Array.isArray(data.data?.data)) {
                 rawUsers = data.data.data;
@@ -94,17 +122,31 @@ export default function UserManagementPage() {
         const initTimer = setTimeout(() => {
             fetchUsers();
         }, 0);
-        const userChannel = supabase.channel("custom-user-channel")
-            .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => {
-                sessionStorage.removeItem("users_cache");
-                fetchUsers();
-            }).subscribe();
+
+        const userChannel = supabase
+            .channel("custom-user-channel")
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "users" },
+                (payload) => {
+                    console.log("⚡ [Realtime Triggered] Sự kiện mới:", payload.eventType);
+                    sessionStorage.removeItem("users_cache");
+                    fetchUsers();
+                }
+            )
+            .subscribe((status, err) => {
+                if (status === "SUBSCRIBED") {
+                    console.log("✅ Đã kết nối Realtime thành công với bảng users!");
+                } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                    console.error("❌ Lỗi kết nối Realtime:", status, err);
+                }
+            });
 
         return () => {
             supabase.removeChannel(userChannel);
             clearTimeout(initTimer);
         };
-    }, []);
+    }, [fetchUsers]);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
@@ -148,7 +190,7 @@ export default function UserManagementPage() {
 
     const openAddModal = () => {
         setSelectedUser(null);
-        setFormData({
+        reset({
             name: "",
             email: "",
             phone_number: "",
@@ -161,7 +203,7 @@ export default function UserManagementPage() {
 
     const openEditModal = (user: User) => {
         setSelectedUser(user);
-        setFormData({
+        reset({
             name: user.name,
             email: user.email,
             phone_number: user.phone_number ? String(user.phone_number) : "",
@@ -177,20 +219,12 @@ export default function UserManagementPage() {
         setSelectedUser(null);
     };
 
-    const handleFormChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.name.trim() || !formData.email.trim()) {
-            toast.error("Vui lòng điền đầy đủ họ tên và email.");
+    const onSubmit = async (formData: UserFormValues) => {
+        if (!selectedUser && (!formData.password || formData.password.length < 6)) {
+            toast.error("Mật khẩu cho người dùng mới phải có ít nhất 6 ký tự.");
             return;
         }
 
-        setIsSubmitting(true);
         try {
             const payload: any = {
                 name: formData.name.trim(),
@@ -199,27 +233,19 @@ export default function UserManagementPage() {
                 role: formData.role,
                 status: formData.status,
             };
-            if (!selectedUser || formData.password.trim()) {
+
+            if (formData.password && formData.password.trim()) {
                 payload.password = formData.password;
             }
+
             if (selectedUser) {
                 const { data } = await api.patch(`/users/${selectedUser.id}`, payload);
                 if (data.success) {
                     setUsers((prev) =>
-                        prev.map((u) =>
-                            u.id === selectedUser.id ? { ...u, ...data.data } : u
-                        )
+                        prev.map((u) => (u.id === selectedUser.id ? { ...u, ...data.data } : u))
                     );
                     toast.success("Cập nhật người dùng thành công!");
                     closeModal();
-                    setFormData({
-                        name: "",
-                        email: "",
-                        phone_number: "",
-                        password: "",
-                        role: "USER" as UserRole,
-                        status: "active" as "active" | "inactive",
-                    })
                 } else {
                     toast.error(data.message || "Cập nhật thất bại");
                 }
@@ -229,14 +255,6 @@ export default function UserManagementPage() {
                     setUsers((prev) => [data.data, ...prev]);
                     toast.success("Thêm người dùng thành công!");
                     closeModal();
-                    setFormData({
-                        name: "",
-                        email: "",
-                        phone_number: "",
-                        password: "",
-                        role: "USER" as UserRole,
-                        status: "active" as "active" | "inactive",
-                    })
                 } else {
                     toast.error(data.message || "Thêm mới thất bại");
                 }
@@ -245,9 +263,6 @@ export default function UserManagementPage() {
             toast.error(
                 error?.response?.data?.message || error?.message || "Có lỗi xảy ra"
             );
-        } finally {
-            setIsSubmitting(false);
-
         }
     };
 
@@ -258,7 +273,7 @@ export default function UserManagementPage() {
 
     const handleDelete = async () => {
         if (!userToDelete) return;
-        setIsSubmitting(true);
+        setIsDeleting(true);
         try {
             await api.delete(`/users/${userToDelete.id}`);
             setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
@@ -266,22 +281,19 @@ export default function UserManagementPage() {
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Xóa thất bại");
         } finally {
-            setIsSubmitting(false);
+            setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
             setUserToDelete(null);
         }
     };
+
     const toggleStatus = async (user: User) => {
         const newStatus = user.status === "active" ? "inactive" : "active";
         try {
-            const { data } = await api.patch(`/users/${user.id}`, {
-                status: newStatus,
-            });
+            const { data } = await api.patch(`/users/${user.id}`, { status: newStatus });
             if (data.success) {
                 setUsers((prev) =>
-                    prev.map((u) =>
-                        u.id === user.id ? { ...u, status: newStatus } : u
-                    )
+                    prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
                 );
                 toast.success(
                     `Đã ${newStatus === "active" ? "kích hoạt" : "vô hiệu hóa"} tài khoản`
@@ -336,6 +348,7 @@ export default function UserManagementPage() {
                         </motion.button>
                     </div>
                 </div>
+
                 <div className="bg-white dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200/60 dark:border-gray-700/50 p-4 sm:p-6 mb-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="relative col-span-1 sm:col-span-2 lg:col-span-2">
@@ -376,6 +389,7 @@ export default function UserManagementPage() {
                         </div>
                     </div>
                 </div>
+
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -504,6 +518,7 @@ export default function UserManagementPage() {
                                     </tbody>
                                 </table>
                             </div>
+
                             {totalPages > 1 && (
                                 <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-700/50">
                                     <p className="text-xs text-gray-500">
@@ -584,20 +599,20 @@ export default function UserManagementPage() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                         Họ và tên
                                     </label>
                                     <input
                                         type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleFormChange}
+                                        {...register("name")}
                                         placeholder="Nguyễn Văn A"
-                                        required
                                         className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                     />
+                                    {errors.name && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -606,45 +621,45 @@ export default function UserManagementPage() {
                                     </label>
                                     <input
                                         type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleFormChange}
+                                        {...register("email")}
                                         placeholder="email@example.com"
-                                        required
                                         className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                     />
+                                    {errors.email && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                                    )}
                                 </div>
 
                                 {!selectedUser && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                            Mật khẩu
+                                            Mật khẩu (Ít nhất 6 ký tự)
                                         </label>
                                         <input
                                             type="password"
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleFormChange}
+                                            {...register("password")}
                                             placeholder="••••••••"
-                                            required
                                             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                         />
+                                        {errors.password && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+                                        )}
                                     </div>
                                 )}
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                        Phone number
+                                        Số điện thoại
                                     </label>
                                     <input
-                                        type="phone_number"
-                                        name="phone_number"
-                                        value={formData.phone_number}
-                                        onChange={handleFormChange}
+                                        type="text"
+                                        {...register("phone_number")}
                                         placeholder="0123456789"
-                                        required
                                         className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                     />
+                                    {errors.phone_number && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.phone_number.message}</p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -653,9 +668,7 @@ export default function UserManagementPage() {
                                             Vai trò
                                         </label>
                                         <select
-                                            name="role"
-                                            value={formData.role}
-                                            onChange={handleFormChange}
+                                            {...register("role")}
                                             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                         >
                                             <option value="USER">Người dùng</option>
@@ -668,9 +681,7 @@ export default function UserManagementPage() {
                                             Trạng thái
                                         </label>
                                         <select
-                                            name="status"
-                                            value={formData.status}
-                                            onChange={handleFormChange}
+                                            {...register("status")}
                                             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all"
                                         >
                                             <option value="active">Hoạt động</option>
@@ -689,10 +700,10 @@ export default function UserManagementPage() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSubmitting}
+                                        disabled={isFormSubmitting}
                                         className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all text-sm"
                                     >
-                                        {isSubmitting ? (
+                                        {isFormSubmitting ? (
                                             <>
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                                 Đang lưu...
@@ -709,6 +720,7 @@ export default function UserManagementPage() {
                     </div>
                 )}
             </AnimatePresence>
+
             <AnimatePresence>
                 {isDeleteConfirmOpen && userToDelete && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -747,10 +759,10 @@ export default function UserManagementPage() {
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    disabled={isSubmitting}
+                                    disabled={isDeleting}
                                     className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-md shadow-red-500/20 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all text-sm"
                                 >
-                                    {isSubmitting ? (
+                                    {isDeleting ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                             Đang xóa...

@@ -5,11 +5,11 @@ import { supabase } from "@/utils/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, MapPin, Search, Globe, Sparkles, Map } from "lucide-react";
 import { Province } from "@/interface";
-import { ProvinceTable } from "@/components/tables/provinceTable";
-import { AddProvinceModal } from "@/components/modals/AddProvinceModal";
-import { EditProvinceModal } from "@/components/modals/EditProvinceModal";
+import { ProvinceTable } from "@/components/tables/admin/provinceTable";
+import { AddProvinceModal } from "@/components/modals/admin/AddProvinceModal";
+import { EditProvinceModal } from "@/components/modals/admin/EditProvinceModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { ListLocationsModal } from "@/components/modals/ListLocationsModal";
+import { ListLocationsModal } from "@/components/modals/admin/ListLocationsModal";
 import { api } from "@/lib/apiClient";
 
 export default function ProvincesPage() {

@@ -42,6 +42,10 @@ export function proxy(request: NextRequest) {
     const isAccessingProtectedRoute = protectedUserRoutes.some(route =>
         url.pathname.startsWith(route)
     );
+    if (!url.pathname.startsWith('/user')) {
+        const targetPath = url.pathname === '/' ? '/user' : `/user${url.pathname}`;
+        return NextResponse.rewrite(new URL(targetPath, request.url));
+    }
 
     if (isAccessingProtectedRoute && !token) {
         const userLoginUrl = new URL('/signin', request.url);

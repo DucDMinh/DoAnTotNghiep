@@ -2,8 +2,8 @@
 import { useState } from "react";
 
 import { Itinerary, Location, Province } from "@/interface";
-import { SetupScreen } from "@/components/itineraries/setup";
-import { BuilderScreen } from "@/components/itineraries/builder/BuilderScreen";
+import { SetupScreen } from "@/components/admin/itineraries/setup";
+import { BuilderScreen } from "@/components/admin/itineraries/builder/BuilderScreen";
 
 export default function ItineraryBuilderPage() {
     const [step, setStep] = useState<"SETUP" | "BUILDER">("SETUP");
