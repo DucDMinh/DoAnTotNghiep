@@ -21,7 +21,20 @@ export const verifyToken = async (ctx, next) => {
         await next();
     } catch (error) {
         ctx.status = 401;
-        ctx.body = { success: false, message: "Token không hợp lệ hoặc đã hết hạn!" };
+        if (error.name === 'TokenExpiredError') {
+            ctx.body = {
+                success: false,
+                code: 'TOKEN_EXPIRED',
+                message: 'Token đã hết hạn, vui lòng làm mới token!',
+                expiredAt: error.expiredAt
+            };
+            return;
+        }
+        ctx.body = {
+            success: false,
+            code: 'INVALID_TOKEN',
+            message: 'Token không hợp lệ!'
+        };
     }
 };
 

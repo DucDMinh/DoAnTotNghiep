@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
+import { useSearchParams } from "next/navigation";
 
 export default function AdminSignInScreen() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,14 @@ export default function AdminSignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const error_message = searchParams.get("error_message");
+
+  useEffect(() => {
+    if (error_message === "TOKEN_EXPIRED") {
+      toast.error("Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại!");
+    }
+  }, [error_message]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
