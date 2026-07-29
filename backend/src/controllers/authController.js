@@ -16,16 +16,18 @@ export async function login(ctx) {
 
     try {
         const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
-
-        if (error || !user) {
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (error || !user || !isValidPassword) {
             ctx.status = 401;
             ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
             return;
         }
-        const isValidPassword = await bcrypt.compare(password, user.password_hash);
-        if (!isValidPassword) {
-            ctx.status = 401;
-            ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
+        if (user.status === 'inactive') {
+            ctx.status = 403;
+            ctx.body = {
+                success: false,
+                message: "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ Quản trị viên!"
+            };
             return;
         }
         const token = jwt.sign(
