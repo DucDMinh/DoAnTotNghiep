@@ -7,14 +7,14 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
 import { Compass } from "lucide-react";
-import { useItineraryBuilder } from "@/hooks/Itineraries/useItineraryBuilder";
+import { useItineraryBuilder } from "@/hooks/admin/Itineraries/useItineraryBuilder";
 import { BuilderHeader } from "./BuilderHeader";
 import { GeneralInfoForm } from "./GeneralInfoForm";
 import { DayCard } from "./DayCard";
 import { LocationSidebar } from "./LocationSidebar";
 import { DraggableLocationCard } from "./DraggableLocationCard";
 import { Map as MapIcon, AlertTriangle } from "lucide-react";
-import { useItinerarySetup } from "@/hooks/Itineraries/useItinerarySetup";
+import { useItinerarySetup } from "@/hooks/admin/Itineraries/useItinerarySetup";
 
 const RouteMapViewer = dynamic(() => import("@/components/admin/itineraries/builder/RouteMapViewer"), {
     ssr: false,
