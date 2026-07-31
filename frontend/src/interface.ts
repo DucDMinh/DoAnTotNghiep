@@ -106,7 +106,8 @@ export interface Itinerary {
     image_url?: string | null;
     itinerary_days: Itinerary_days[] | null;
     share?: boolean;
-    itinerary_provinces: Itinerary_provinces[] | null
+    itinerary_provinces: Itinerary_provinces[] | null;
+    user_id: User | null;
 }
 
 export interface Itinerary_provinces {

@@ -26,6 +26,17 @@ class LocationRepository extends BaseRepository {
 
         return { data, count };
     }
+    async getFavor(limit) {
+        let query = supabase
+            .from('locations')
+            .select('*, provinces(name)')
+            .order('saved_count', { ascending: false });
+        const limitNumber = limit ? parseInt(limit) : 5;
+        query = query.limit(limitNumber);
+        const { data, error } = await query;
+        if (error) throw error;
+        return { data };
+    }
 }
 
 export const locationRepo = new LocationRepository();

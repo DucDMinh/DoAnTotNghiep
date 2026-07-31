@@ -65,24 +65,29 @@ class ItineraryRepository extends BaseRepository {
 
         return { data };
     }
-    getAll = async () => {
-        const { data, error } = await supabase
+    getAll = async (is_public) => {
+        let query = supabase
             .from('itineraries')
             .select(`
-            *,
-            itinerary_provinces (
-                province_id,
-                provinces (
-                    id,
-                    name
+                *,
+                itinerary_provinces (
+                    province_id,
+                    provinces (
+                        id,
+                        name
+                    )
                 )
-            )
-        `);
-        if (error) {
-            console.error("Lỗi khi lấy Itinerary:", error);
-            throw error;
+            `)
+            .order('created_at', { ascending: false });
+        if (is_public === 'true') {
+            query = query.eq('share', true);
         }
-        return { data };
+        const { data, error } = await query;
+        return { data, error };
+    }
+    getTrending = async () => {
+        const { data, error } = await supabase.rpc('get_trending_itineraries_weekly');
+        return { data, error };
     }
 }
 

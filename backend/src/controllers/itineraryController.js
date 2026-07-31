@@ -35,6 +35,27 @@ class ItineraryController extends BaseController {
             ctx.body = { success: false, message: `Lỗi hệ thống khi tạo ${this.itemName}`, error_detail: error.message };
         }
     }
+    getAll = async (ctx) => {
+        try {
+            const { trending, is_public } = ctx.query;
+            if (trending === 'weekly') {
+                const { data, error } = await this.repository.getTrending();
+                if (error) throw error;
+                ctx.status = 200;
+                ctx.body = { success: true, data: data };
+                return;
+            }
+            const { data, error } = await this.repository.getAll(is_public);
+            if (error) throw error;
+            ctx.status = 200;
+            ctx.body = { success: true, data: data };
+
+        } catch (error) {
+            console.error("Lỗi khi lấy lộ trình:", error);
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống khi lấy danh sách lộ trình`, error_detail: error.message };
+        }
+    }
 }
 
 const itineraryController = new ItineraryController();
