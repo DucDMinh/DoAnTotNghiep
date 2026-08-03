@@ -2,8 +2,64 @@ import dotenv from 'dotenv';
 dotenv.config();
 import Router from '@koa/router';
 import bcrypt from 'bcryptjs';
+import { userRepo } from '../repositories/userRepository.js';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../config/supabaseClient.js';
+
+export async function createUser(ctx) {
+    try {
+        const { name, email, password } = ctx.request.body;
+        if (!email || !password || !name) {
+            ctx.throw(400, 'Thiếu thông tin bắt buộc (name, email, password)!');
+        }
+        if (password.length > 72) {
+            ctx.throw(400, 'Mật khẩu không được vượt quá 72 ký tự!');
+        }
+        if (await userRepo.checkExistEmail(email)) {
+            ctx.throw(400, 'Email đã được sử dụng!');
+        }
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
+        const payload = {
+            name,
+            email,
+            password_hash,
+            role: "USER"
+        };
+        const newUser = await userRepo.create(payload);
+        const token = jwt.sign(
+            {
+                id: newUser.id,
+                email: newUser.email,
+                role: newUser.role || 'USER'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        delete newUser.password_hash;
+
+        ctx.status = 200;
+        ctx.body = { success: true, message: "Đăng nhập thành công!", token, user: newUser };
+
+    } catch (error) {
+        if (error.status === 400 || error.statusCode === 400 || error.code === '23505') {
+            ctx.status = 400;
+            ctx.body = {
+                success: false,
+                message: error.code === '23505' ? 'Email này đã được đăng ký trong hệ thống!' : error.message
+            };
+        } else {
+            console.error("Lỗi hệ thống khi tạo user:", error);
+            ctx.status = 500;
+            ctx.body = {
+                success: false,
+                message: `Lỗi hệ thống khi tạo người dùng`,
+                error_detail: error.message || "Unknown error"
+            };
+        }
+    }
+}
 
 export async function login(ctx) {
     const { email, password } = ctx.request.body;

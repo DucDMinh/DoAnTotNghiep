@@ -1,14 +1,7 @@
 "use client";
+import { User } from "@/interface";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import toast from "react-hot-toast";
-
-interface User {
-    id: string | '';
-    name: string;
-    email: string;
-    avatar?: string | '';
-    role?: string
-}
 
 interface AuthContextType {
     user: User | null;
