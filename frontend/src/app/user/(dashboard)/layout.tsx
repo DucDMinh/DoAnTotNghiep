@@ -55,7 +55,6 @@ export default function UserDashboardLayout({
     return (
         <div className="min-h-screen paper-grid selection:bg-[var(--accent-primary)] selection:text-white">
             <GlobalStyles />
-            <Toaster position="bottom-right" />
             <AppHeader
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}

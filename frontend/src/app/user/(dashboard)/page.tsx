@@ -243,6 +243,7 @@ export default function JournifyUserDashboard() {
 
     const { user: currentUser } = useAuth();
 
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -357,7 +358,7 @@ export default function JournifyUserDashboard() {
 
     return (
         <div className="min-h-screen bg-[var(--bg-paper)] text-[var(--text-main)] transition-colors selection:bg-[var(--accent-primary)] selection:text-white">
-            <Toaster position="bottom-right" />
+            <Toaster position="top-right" />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-20 md:pb-10">
                 {activeNav === "dashboard" && (
                     <div className="space-y-12 md:space-y-16">
@@ -585,30 +586,41 @@ export default function JournifyUserDashboard() {
                                 <h3 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
                                     <Award className="w-5 h-5 text-[var(--accent-gold)]" /> Hành trình của bạn
                                 </h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-[var(--text-muted)]">Lộ trình đã lưu</span>
-                                        <span className="font-bold text-lg">{personalStats.totalTrips}</span>
+                                {currentUser ? (
+                                    <>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-[var(--text-muted)]">Lộ trình đã lưu</span>
+                                                <span className="font-bold text-lg">{personalStats.totalTrips}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-[var(--text-muted)]">Điểm yêu thích</span>
+                                                <span className="font-bold text-lg">{personalStats.totalWishlist}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-[var(--text-muted)]">Đã clone</span>
+                                                <span className="font-bold text-lg">{personalStats.totalCloned}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-[var(--text-muted)]">Địa điểm đã thêm</span>
+                                                <span className="font-bold text-lg">{personalStats.totalPlaces}</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setActiveNav("trips")}
+                                            className="mt-6 w-full py-2.5 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold hover:bg-[var(--accent-primary)] hover:text-white transition"
+                                        >
+                                            Quản lý lộ trình
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-6 text-[var(--text-muted)]">
+                                        <Award className="w-8 h-8 mx-auto opacity-30 mb-2" />
+                                        <p className="text-sm">Đăng nhập để xem thống kê cá nhân.</p>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-[var(--text-muted)]">Điểm yêu thích</span>
-                                        <span className="font-bold text-lg">{personalStats.totalWishlist}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-[var(--text-muted)]">Đã clone</span>
-                                        <span className="font-bold text-lg">{personalStats.totalCloned}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-[var(--text-muted)]">Địa điểm đã thêm</span>
-                                        <span className="font-bold text-lg">{personalStats.totalPlaces}</span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setActiveNav("trips")}
-                                    className="mt-6 w-full py-2.5 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold hover:bg-[var(--accent-primary)] hover:text-white transition"
-                                >
-                                    Quản lý lộ trình
-                                </button>
+                                )}
+
+
                             </div>
 
                             {/* Wishlist preview */}

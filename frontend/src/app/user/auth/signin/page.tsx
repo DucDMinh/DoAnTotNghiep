@@ -1,6 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, ArrowRight, Compass } from "lucide-react";
 import toast from "react-hot-toast";
@@ -8,15 +8,31 @@ import { useAuth } from "@/hooks/auth/AuthContext";
 
 export default function AuthScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const searchParams = useSearchParams();
+  const error_message = searchParams.get("error_message");
 
   const { login } = useAuth();
+
+  useEffect(() => {
+    if (error_message) {
+      toast.error(
+        error_message === "TOKEN_EXPIRED"
+          ? "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại."
+          : "Vui lòng đăng nhập để truy cập trang này.",
+        { id: "auth-redirect-toast" }
+      );
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("error_message");
+      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [error_message, pathname, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +52,12 @@ export default function AuthScreen() {
       const result = await response.json();
 
       if (response.ok && result.success) {
+        toast.dismiss(toastId);
         toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
         login(result.token, result.user);
-        router.push('/');
-
+        setTimeout(() => {
+          router.push('/');
+        }, 800);
       } else {
         toast.error(result.message || "Có lỗi xảy ra, vui lòng thử lại.", { id: toastId });
       }

@@ -52,24 +52,22 @@ export async function proxy(request: NextRequest) {
     if (url.pathname.startsWith('/admin')) {
         return NextResponse.redirect(new URL('/', request.url));
     }
-    const protectedUserRoutes = ['/profile', '/my-itineraries', '/settings'];
+    const protectedUserRoutes = ['/MyItinerary', '/my-itineraries', '/settings'];
     const isAccessingProtectedRoute = protectedUserRoutes.some(route =>
         url.pathname.startsWith(route)
     );
-
-    if (!url.pathname.startsWith('/user')) {
-        const targetPath = url.pathname === '/' ? '/user' : `/user${url.pathname}`;
-        return NextResponse.rewrite(new URL(targetPath, request.url));
-    }
     if (isAccessingProtectedRoute && !isTokenAlive) {
-        const userLoginUrl = new URL('/signin', request.url);
-        userLoginUrl.searchParams.set('callbackUrl', url.pathname);
-
+        const userLoginUrl = new URL('/auth/signin', request.url);
+        userLoginUrl.searchParams.set('error_message', 'redirect-from-protected-route');
         const response = NextResponse.redirect(userLoginUrl);
         response.cookies.delete('accessToken');
         return response;
     }
 
+    if (!url.pathname.startsWith('/user')) {
+        const targetPath = url.pathname === '/' ? '/user' : `/user${url.pathname}`;
+        return NextResponse.rewrite(new URL(targetPath, request.url));
+    }
     return NextResponse.next();
 }
 

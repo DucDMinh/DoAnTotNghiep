@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { User } from "@/interface";
-import { Compass, CompassIcon, FolderKanban, Heart, LogIn, Moon, PlusCircle, Sparkles, Sun, Users } from "lucide-react";
-import { useRouter } from "next/navigation"; // 🌟 Thêm import này
+import { Compass, CompassIcon, FolderKanban, Heart, LogIn, LogOut, Moon, PlusCircle, Settings, Sparkles, Sun, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NextLink from "next/link";
+import { useAuth } from "@/hooks/auth/AuthContext";
 
 interface AppHeaderProp {
     searchQuery: string;
@@ -24,7 +25,7 @@ const NavItems = [
     { id: "dashboard", label: "Khám phá", icon: Compass, path: '/' },
     { id: "trips", label: "Lộ trình của tôi", icon: FolderKanban, path: '/MyItinerary' },
     { id: "wishlist", label: "Yêu thích", icon: Heart },
-    { id: "community", label: "Cộng đồng", icon: Users },
+    { id: "community", label: "Cộng đồng", icon: UserIcon },
     { id: "ai-planner", label: "AI Planner", icon: Sparkles },
 ];
 
@@ -39,6 +40,8 @@ export const AppHeader = ({
     activeNav
 }: AppHeaderProp) => {
     const [isMounted, setIsMounted] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const { logout } = useAuth();
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -74,7 +77,7 @@ export const AppHeader = ({
                         {NavItems.map((item) => (
                             <button
                                 key={item.id}
-                                onClick={() => handleNavItemClick(item)} // 🌟 Gọi hàm xử lý đã tách
+                                onClick={() => handleNavItemClick(item)}
                                 className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${activeNav === item.id
                                     ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"
                                     : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-paper)]"
@@ -105,11 +108,67 @@ export const AppHeader = ({
                             {!isMounted ? (
                                 <div className="w-24 h-9 bg-gray-200 rounded-full animate-pulse"></div>
                             ) : currentUser ? (
-                                <img
-                                    src={currentUser.avatar || "/images/user/owner.jpg"}
-                                    alt="avatar"
-                                    className="w-8 h-8 rounded-full border-2 border-[var(--accent-gold)] object-cover cursor-pointer hover:scale-105 transition"
-                                />
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                        className="block focus:outline-none"
+                                    >
+                                        <img
+                                            src={currentUser.avatar || "/images/user/owner.jpg"}
+                                            alt="avatar"
+                                            className="w-8 h-8 rounded-full border-2 border-[var(--accent-gold)] object-cover hover:scale-105 transition"
+                                        />
+                                    </button>
+                                    {isProfileOpen && (
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setIsProfileOpen(false)}
+                                        ></div>
+                                    )}
+                                    {isProfileOpen && (
+                                        <div className="absolute right-0 mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg py-1 z-50 transform origin-top-right transition-all animate-in fade-in slide-in-from-top-2">
+                                            <div className="px-4 py-3 border-b border-[var(--border-color)]">
+                                                <p className="text-sm font-bold text-[var(--text-main)] truncate">
+                                                    {currentUser.name}
+                                                </p>
+                                                <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">
+                                                    {currentUser.email || "Thành viên Journify"}
+                                                </p>
+                                            </div>
+                                            <div className="py-1">
+                                                <NextLink
+                                                    href="/profile"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                    className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--bg-paper)] transition-colors"
+                                                >
+                                                    <UserIcon className="w-4 h-4 text-[var(--text-muted)]" />
+                                                    Hồ sơ cá nhân
+                                                </NextLink>
+
+                                                <NextLink
+                                                    href="/settings"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                    className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--bg-paper)] transition-colors"
+                                                >
+                                                    <Settings className="w-4 h-4 text-[var(--text-muted)]" />
+                                                    Cài đặt
+                                                </NextLink>
+                                            </div>
+                                            <div className="border-t border-[var(--border-color)] py-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        logout();
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                    Đăng xuất
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <NextLink
                                     href="/auth/signin"
@@ -122,13 +181,11 @@ export const AppHeader = ({
                         </div>
                     </div>
                 </div>
-
-                {/* Mobile bottom navigation */}
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t border-[var(--border-color)] z-50 flex justify-around items-center py-2 px-2 shadow-lg">
                     {NavItems.slice(0, 4).map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => handleNavItemClick(item)} // 🌟 Gọi hàm xử lý
+                            onClick={() => handleNavItemClick(item)}
                             className={`flex flex-col items-center gap-0.5 text-xs font-medium ${activeNav === item.id ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
                                 }`}
                         >
