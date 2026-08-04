@@ -52,15 +52,21 @@ export async function proxy(request: NextRequest) {
     if (url.pathname.startsWith('/admin')) {
         return NextResponse.redirect(new URL('/', request.url));
     }
-    const protectedUserRoutes = ['/MyItinerary', '/my-itineraries', '/settings'];
+    const protectedUserRoutes = ['/MyItinerary', '/settings'];
     const isAccessingProtectedRoute = protectedUserRoutes.some(route =>
         url.pathname.startsWith(route)
     );
     if (isAccessingProtectedRoute && !isTokenAlive) {
         const userLoginUrl = new URL('/auth/signin', request.url);
-        userLoginUrl.searchParams.set('error_message', 'redirect-from-protected-route');
         const response = NextResponse.redirect(userLoginUrl);
+
         response.cookies.delete('accessToken');
+
+        response.cookies.set('toast_error', 'unauthorized', {
+            path: '/',
+            maxAge: 10,
+        });
+
         return response;
     }
 

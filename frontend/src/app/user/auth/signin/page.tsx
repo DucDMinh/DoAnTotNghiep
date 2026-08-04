@@ -1,5 +1,5 @@
 "use client";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, ArrowRight, Compass } from "lucide-react";
@@ -8,31 +8,31 @@ import { useAuth } from "@/hooks/auth/AuthContext";
 
 export default function AuthScreen() {
   const router = useRouter();
-  const pathname = usePathname();
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const searchParams = useSearchParams();
-  const error_message = searchParams.get("error_message");
 
   const { login } = useAuth();
 
   useEffect(() => {
-    if (error_message) {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+      return null;
+    };
+    const errorCookie = getCookie('toast_error');
+    if (errorCookie) {
       toast.error(
-        error_message === "TOKEN_EXPIRED"
-          ? "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại."
-          : "Vui lòng đăng nhập để truy cập trang này.",
-        { id: "auth-redirect-toast" }
+        errorCookie === "unauthorized"
+          ? "Vui lòng đăng nhập để tiếp tục."
+          : "Phiên đăng nhập đã hết hạn!"
       );
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("error_message");
-      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-      router.replace(newUrl, { scroll: false });
+      document.cookie = "toast_error=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     }
-  }, [error_message, pathname, router, searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,12 +52,12 @@ export default function AuthScreen() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        toast.dismiss(toastId);
-        toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
+        toast.remove(toastId);
         login(result.token, result.user);
         setTimeout(() => {
           router.push('/');
-        }, 800);
+        }, 500);
+        toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
       } else {
         toast.error(result.message || "Có lỗi xảy ra, vui lòng thử lại.", { id: toastId });
       }

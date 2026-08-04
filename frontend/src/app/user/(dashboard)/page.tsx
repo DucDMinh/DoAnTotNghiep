@@ -9,34 +9,18 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Compass,
-    Search,
     MapPin,
     Sparkles,
     TrendingUp,
-    BookmarkPlus,
     ChevronRight,
     Heart,
     Clock,
-    Plus,
     X,
-    Send,
-    Sun,
-    Moon,
     Award,
-    CheckCircle2,
-    Circle,
-    Share2,
-    Navigation,
-    Luggage,
-    Coffee,
     Compass as CompassIcon,
-    Users,
-    FolderKanban,
     Edit3,
     Clock as ClockIcon,
-    PlusCircle,
     Image as ImageIcon,
-    Link,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -46,8 +30,6 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
-    DndContext,
-    closestCenter,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -56,15 +38,13 @@ import {
 } from "@dnd-kit/core";
 import {
     arrayMove,
-    SortableContext,
     sortableKeyboardCoordinates,
-    rectSortingStrategy,
-    useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useAuth } from "@/hooks/auth/AuthContext";
+import { UserBanner } from "@/components/user/HomePage/UserBanner";
+import { TrendingCard } from "@/components/user/HomePage/TrendingCard";
+import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
 
-// ============== INTERFACES & TYPES ==============
 
 interface StarRatingProps {
     rating: number;
@@ -180,25 +160,7 @@ function notify(
     );
 }
 
-function WashiTape({
-    color = "var(--washi-teal)",
-    className = "",
-    style = {},
-}: {
-    color?: string;
-    className?: string;
-    style?: React.CSSProperties;
-}) {
-    return (
-        <div
-            className={`washi-tape z-10 ${className}`}
-            style={{
-                ...style,
-                ["--washi-color" as any]: color,
-            }}
-        />
-    );
-}
+
 function StarRating({ rating, maxStars = 5, size = "w-5 h-5" }: StarRatingProps) {
     return (
         <div className="flex items-center gap-1">
@@ -362,114 +324,12 @@ export default function JournifyUserDashboard() {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-20 md:pb-10">
                 {activeNav === "dashboard" && (
                     <div className="space-y-12 md:space-y-16">
-                        {currentUser ? (
-                            <section className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[var(--accent-primary)]/10 via-[var(--bg-card)] to-[var(--accent-gold)]/10 p-8 md:p-12 shadow-xl border border-[var(--border-color)]">
-                                <div className="absolute -top-20 -right-20 w-64 h-64 bg-[var(--accent-primary)]/20 rounded-full blur-3xl" />
-                                <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[var(--accent-gold)]/20 rounded-full blur-3xl" />
-                                <div className="relative flex flex-col md:flex-row items-center gap-8">
-                                    <div className="flex-1 space-y-5">
-                                        <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight">
-                                            Chào {currentUser.name}, <br />
-                                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-gold)]">
-                                                sẵn sàng khám phá
-                                            </span>{" "}
-                                            chưa?
-                                        </h1>
-                                        <p className="text-sm md:text-base text-[var(--text-muted)] max-w-lg">
-                                            Khám phá Việt Nam theo cách riêng của bạn với những lộ trình cá nhân hóa, gợi ý từ AI và cộng đồng đam mê du lịch.
-                                        </p>
-                                        <div className="hidden md:flex flex-1 max-w-md relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                                            <input
-                                                type="text"
-                                                placeholder="Tìm kiếm điểm đến, lộ trình..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-paper)] border border-[var(--border-color)] rounded-full text-sm outline-none focus:border-[var(--accent-primary)] transition-colors"
-                                            />
-                                        </div>
-                                        <div className="flex flex-wrap gap-3">
-                                            <button
-                                                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--accent-primary)] text-white font-bold shadow-lg hover:bg-[var(--accent-primary)]/90 transition"
-                                            >
-                                                <Compass className="w-5 h-5" /> Tìm kiếm
-                                            </button>
-                                            <button
-                                                onClick={() => setIsAiModalOpen(true)}
-                                                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] font-bold hover:bg-[var(--bg-paper)] transition"
-                                            >
-                                                <Sparkles className="w-5 h-5 text-[var(--accent-gold)]" /> Tạo với AI
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="w-full md:w-2/5 h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl rotate-1 hover:rotate-0 transition-transform duration-500">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop"
-                                            alt="Vietnam travel"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                </div>
-                            </section>) : (
-                            <section className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[var(--accent-primary)]/10 via-[var(--bg-card)] to-[var(--accent-gold)]/10 p-8 md:p-12 shadow-xl border border-[var(--border-color)]">
-                                {/* Background Glow Effects */}
-                                <div className="absolute -top-20 -right-20 w-64 h-64 bg-[var(--accent-primary)]/20 rounded-full blur-3xl" />
-                                <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[var(--accent-gold)]/20 rounded-full blur-3xl" />
-
-                                <div className="relative flex flex-col md:flex-row items-center gap-8">
-                                    <div className="flex-1 space-y-5">
-                                        {/* 1. Tiêu đề vẫy gọi thay vì gọi tên user */}
-                                        <h1 className="font-display text-3xl md:text-5xl font-bold leading-tight">
-                                            Lên kế hoạch cho <br />
-                                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-gold)]">
-                                                chuyến đi trong mơ
-                                            </span>{" "}
-                                            của bạn
-                                        </h1>
-
-                                        {/* 2. Text mô tả thu hút hơn */}
-                                        <p className="text-sm md:text-base text-[var(--text-muted)] max-w-lg">
-                                            Khám phá hàng ngàn lộ trình du lịch trải dài khắp Việt Nam. Tự động hóa lịch trình bằng AI, tính toán chi phí và sẵn sàng xách ba lô lên và đi!
-                                        </p>
-
-                                        <div className="hidden md:flex flex-1 max-w-md relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                                            <input
-                                                type="text"
-                                                placeholder="Bạn muốn đi đâu (VD: Đà Lạt, Sapa)..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-paper)] border border-[var(--border-color)] rounded-full text-sm outline-none focus:border-[var(--accent-primary)] transition-colors"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-3">
-                                            <button
-                                                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--accent-primary)] text-white font-bold shadow-lg hover:bg-[var(--accent-primary)]/90 transition"
-                                            >
-                                                <Compass className="w-5 h-5" /> Khám phá ngay
-                                            </button>
-
-                                            {/* 3. Nút phụ chuyển thành Đăng nhập / Tham gia hoặc mở Modal báo yêu cầu đăng nhập */}
-                                            <Link
-                                                href="/signin" // Đổi thành link trang đăng nhập của bạn (hoặc onClick mở Modal Login)
-                                                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)] font-bold hover:bg-[var(--bg-paper)] transition"
-                                            >
-                                                <Sparkles className="w-5 h-5 text-[var(--accent-gold)]" /> Đăng nhập để tạo AI
-                                            </Link>
-                                        </div>
-                                    </div>
-
-                                    <div className="w-full md:w-2/5 h-64 md:h-80 rounded-2xl overflow-hidden shadow-2xl rotate-1 hover:rotate-0 transition-transform duration-500">
-                                        <img
-                                            src="https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200&auto=format&fit=crop"
-                                            alt="Vietnam travel landscape"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                </div>
-                            </section>
-                        )}
+                        <UserBanner
+                            currentUser={currentUser}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                            setIsAiModalOpen={setIsAiModalOpen}
+                        />
                         {/* Lộ trình nổi bật */}
                         <section>
                             <div className="flex items-center justify-between mb-6">
@@ -697,159 +557,12 @@ export default function JournifyUserDashboard() {
                         </section>
                     </div>
                 )}
-
-                {/* Trips View (giữ nguyên) */}
-                {activeNav === "trips" && (
-                    <div className="space-y-6">
-                        <div className="flex flex-wrap items-center gap-3 p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-sm">
-                            <div className="relative flex-1 min-w-[200px]">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                                <input
-                                    type="text"
-                                    placeholder="Tìm kiếm lộ trình..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2.5 bg-[var(--bg-paper)] border border-[var(--border-color)] rounded-xl text-sm outline-none focus:border-[var(--accent-primary)] transition"
-                                />
-                            </div>
-                            <Select
-                                placeholder="Vùng miền"
-                                options={[
-                                    { value: "all", label: "Tất cả" },
-                                    { value: "Miền Bắc", label: "Miền Bắc" },
-                                    { value: "Miền Trung", label: "Miền Trung" },
-                                    { value: "Miền Nam", label: "Miền Nam" },
-                                    { value: "Tây Nguyên", label: "Tây Nguyên" },
-                                ]}
-                                className="w-36"
-                                onChange={(opt) => setFilterRegion(opt?.value || "all")}
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        background: "var(--bg-paper)",
-                                        borderColor: "var(--border-color)",
-                                        borderRadius: "12px",
-                                        boxShadow: "none",
-                                        minHeight: "38px",
-                                    }),
-                                }}
-                            />
-                            <Select
-                                placeholder="Thời gian"
-                                options={[
-                                    { value: "all", label: "Tất cả" },
-                                    { value: "short", label: "≤ 3 ngày" },
-                                    { value: "medium", label: "4-5 ngày" },
-                                    { value: "long", label: "> 5 ngày" },
-                                ]}
-                                className="w-36"
-                                onChange={(opt) => setFilterDuration(opt?.value || "all")}
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        background: "var(--bg-paper)",
-                                        borderColor: "var(--border-color)",
-                                        borderRadius: "12px",
-                                        boxShadow: "none",
-                                        minHeight: "38px",
-                                    }),
-                                }}
-                            />
-                            <Select
-                                placeholder="Ngân sách"
-                                options={[
-                                    { value: "all", label: "Tất cả" },
-                                    { value: "low", label: "< 2 Tr" },
-                                    { value: "medium", label: "2-5 Tr" },
-                                    { value: "high", label: "> 5 Tr" },
-                                ]}
-                                className="w-36"
-                                onChange={(opt) => setFilterBudget(opt?.value || "all")}
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        background: "var(--bg-paper)",
-                                        borderColor: "var(--border-color)",
-                                        borderRadius: "12px",
-                                        boxShadow: "none",
-                                        minHeight: "38px",
-                                    }),
-                                }}
-                            />
-                            <div className="flex items-center gap-2 ml-auto">
-                                <button onClick={() => setSortBy("date")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${sortBy === "date" ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-paper)] text-[var(--text-muted)]"}`}>Ngày</button>
-                                <button onClick={() => setSortBy("budget")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${sortBy === "budget" ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-paper)] text-[var(--text-muted)]"}`}>Ngân sách</button>
-                                <button onClick={() => setSortBy("title")} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${sortBy === "title" ? "bg-[var(--accent-primary)] text-white" : "bg-[var(--bg-paper)] text-[var(--text-muted)]"}`}>Tên</button>
-                            </div>
-                        </div>
-
-                        {filteredItineraries.length === 0 ? (
-                            <div className="text-center py-16 bg-[var(--bg-card)] border border-dashed border-[var(--border-color)] rounded-3xl">
-                                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--bg-paper)] flex items-center justify-center text-[var(--text-muted)]">
-                                    <Compass className="w-8 h-8 opacity-40" />
-                                </div>
-                                <h3 className="font-display font-bold text-lg">Không tìm thấy lộ trình</h3>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">Hãy thử điều chỉnh bộ lọc hoặc tạo lộ trình mới.</p>
-                                <button onClick={() => { setSearchQuery(""); setFilterRegion("all"); setFilterDuration("all"); setFilterBudget("all"); }} className="mt-4 px-5 py-2.5 rounded-full bg-[var(--accent-primary)] text-white text-sm font-bold">Xóa bộ lọc</button>
-                            </div>
-                        ) : (
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <SortableContext items={filteredItineraries.map(i => i.id)} strategy={rectSortingStrategy}>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {filteredItineraries.map((trip, idx) => (
-                                            <SortableTripCard
-                                                key={trip.id}
-                                                id={trip.id}
-                                                trip={trip}
-                                                index={idx}
-                                                onOpenDetail={() => setActiveTripDetail(trip)}
-                                                onClone={() => handleCloneTrip(trip)}
-                                                onLike={() => toggleLike(trip.id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                            </DndContext>
-                        )}
-                    </div>
-                )}
-
-                {/* Wishlist View (giữ nguyên) */}
-                {activeNav === "wishlist" && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="font-display text-2xl font-bold">Wishlist của bạn</h2>
-                            <button onClick={() => setIsAiModalOpen(true)} className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"><Plus className="w-4 h-4" /> Thêm điểm đến</button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {wishlist.map((item) => (
-                                <WishlistCard key={item.id} item={item} onRemove={() => removeWishlist(item.id)} onExplore={() => notify(`Đang khám phá ${item.name}`, "🗺️")} />
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Community Placeholder */}
-                {activeNav === "community" && (
-                    <div className="text-center py-20">
-                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)]">
-                            <Users className="w-10 h-10 opacity-40" />
-                        </div>
-                        <h3 className="font-display text-2xl font-bold">Cộng đồng Journify</h3>
-                        <p className="text-[var(--text-muted)] max-w-md mx-auto mt-2">Sắp ra mắt! Kết nối với những người yêu thích du lịch, chia sẻ lộ trình và khám phá thế giới cùng nhau.</p>
-                    </div>
-                )}
             </main>
 
             {/* Modals (giữ nguyên) */}
             <AnimatePresence>
                 {activeTripDetail && (
                     <TripDetailModal currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
-                )}
-            </AnimatePresence>
-            <AnimatePresence>
-                {isAiModalOpen && (
-                    <AiPlannerModal onClose={() => setIsAiModalOpen(false)} onSuccess={(newTrip) => { setItineraries([newTrip, ...itineraries]); setIsAiModalOpen(false); triggerConfetti(); notify("AI đã hoàn tất cuốn sổ tay mới của bạn!", "🎉", "success"); }} />
                 )}
             </AnimatePresence>
             <AnimatePresence>
@@ -861,237 +574,9 @@ export default function JournifyUserDashboard() {
     );
 }
 
-// ============== SUB-COMPONENTS (giữ nguyên thiết kế thân thiện) ==============
 
-function TrendingCard({ trip, rank, onOpen, onClone }: { trip: Itinerary; rank: number; onOpen: () => void; onClone: () => void }) {
-    return (
-        <div onClick={onOpen} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all cursor-pointer group">
-            <div className="relative h-44 overflow-hidden">
-                <img src={trip.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3 text-[var(--accent-gold)]" /> #{rank}</div>
-                <button onClick={(e) => { e.stopPropagation(); onClone(); }} className="absolute bottom-2 right-2 p-2 rounded-full bg-white/90 text-[var(--text-main)] hover:bg-[var(--accent-primary)] hover:text-white transition shadow-md" title="Lưu lộ trình"><BookmarkPlus className="w-4 h-4" /></button>
-            </div>
-            <div className="p-4">
-                <h4 className="font-display font-bold text-sm line-clamp-1">{trip.title}</h4>
-                <p className="text-xs text-[var(--text-muted)] mt-1">{trip.itinerary_provinces?.map(p => p.provinces?.name).join(" - ") || "Việt Nam"}</p>
-                <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs font-semibold text-[var(--accent-gold)]">{trip.estimated_cost ? `${trip.estimated_cost.toLocaleString('vi-VN')}đ` : "Tự túc"}</span>
-                    <span className="text-xs text-[var(--text-muted)]">{trip.days || 1} ngày</span>
-                </div>
-            </div>
-        </div>
-    );
-}
 
-function SortableTripCard({ id, trip, index, onOpenDetail, onClone, onLike }: { id: string; trip: Itinerary; index: number; onOpenDetail: () => void; onClone: () => void; onLike: () => void }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
 
-    return (
-        <motion.div ref={setNodeRef} style={style} {...attributes} {...listeners} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -5 }} onClick={onOpenDetail} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer group touch-none relative">
-            <div className="relative h-48 overflow-hidden">
-                <img src={trip.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={trip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                    <span className="bg-black/40 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1"><Clock className="w-3 h-3 text-[var(--accent-gold)]" /> {trip.nights || 0}Đ {trip.days || 1}N</span>
-                    <button onClick={(e) => { e.stopPropagation(); onLike(); }} className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-rose-500 hover:scale-110 transition-all"><Heart className="w-4 h-4 fill-white/20" /></button>
-                </div>
-                <div className="absolute bottom-3 left-3 right-3 z-10">
-                    <h3 className="font-display font-bold text-white text-lg leading-tight line-clamp-2 drop-shadow-md">{trip.title}</h3>
-                </div>
-            </div>
-            <div className="p-4">
-                <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)] mb-2">
-                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[var(--accent-primary)]" /> {trip.itinerary_provinces?.[0]?.provinces?.name || "Việt Nam"}</span>
-                    <span className="text-[var(--accent-gold)] font-bold">{trip.estimated_cost ? `${trip.estimated_cost.toLocaleString('vi-VN')}đ` : "Tự túc"}</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                    {trip.theme?.split(',').map((tag, i) => (
-                        <span key={i} className="bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs px-2.5 py-0.5 rounded-full">#{tag.trim()}</span>
-                    ))}
-                </div>
-                <div className="mt-3 pt-3 border-t border-[var(--border-color)] flex justify-end gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); onClone(); }} className="p-2 rounded-full bg-[var(--bg-paper)] hover:bg-[var(--accent-primary)] text-[var(--text-main)] hover:text-white transition-colors border border-[var(--border-color)]" title="Lưu vào sổ tay"><BookmarkPlus className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); notify("Đã chia sẻ lộ trình!", "🔗"); }} className="p-2 rounded-full bg-[var(--bg-paper)] hover:bg-[var(--accent-primary)] text-[var(--text-main)] hover:text-white transition-colors border border-[var(--border-color)]" title="Chia sẻ"><Share2 className="w-4 h-4" /></button>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-function WishlistCard({ item, onRemove, onExplore }: { item: Location; onRemove: () => void; onExplore: () => void }) {
-    return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition group">
-            <div className="relative h-40 overflow-hidden">
-                <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="absolute top-2 right-2 p-1.5 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-rose-500 transition"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-4">
-                <h4 className="font-display font-bold text-base">{item.name}</h4>
-                <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5" /> {item.provinces?.name}</p>
-                <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs font-bold text-[var(--accent-gold)]">★ {item.rating}</span>
-                </div>
-                <button onClick={onExplore} className="mt-3 w-full py-2 rounded-xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-xs font-bold hover:bg-[var(--accent-primary)] hover:text-white transition">Khám phá</button>
-            </div>
-        </div>
-    );
-}
-
-// Trip Detail Modal (giữ nguyên)
-function TripDetailModal({ itinerary, onClose, onClone, currentUser }: { itinerary: Itinerary; onClose: () => void; onClone: () => void, currentUser: User | null }) {
-    const [activeTab, setActiveTab] = useState<"itinerary" | "checklist">("itinerary");
-    const destination = itinerary.itinerary_provinces?.map(ip => ip.provinces?.name).join(" - ") || "Việt Nam";
-    const defaultChecklist = [
-        { item: "Căn cước công dân / Hộ chiếu", checked: true },
-        { item: "Quần áo phù hợp theo thời tiết", checked: false },
-        { item: "Sạc dự phòng & dây cáp", checked: false },
-        { item: "Đồ dùng cá nhân", checked: false }
-    ];
-    const [checklist, setChecklist] = useState(defaultChecklist);
-    const toggleCheck = (idx: number) => { setChecklist((prev) => prev.map((item, i) => i === idx ? { ...item, checked: !item.checked } : item)); };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-4xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col md:flex-row max-h-[85vh]">
-                <div className="md:w-5/12 bg-[var(--bg-bento)] p-6 sm:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[var(--border-color)] relative">
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] font-display bg-[var(--bg-card)] px-3 py-1 rounded-full border border-[var(--border-color)]">{itinerary.days || 1} Ngày Trải Nghiệm</span>
-                            <button onClick={onClose} className="md:hidden p-1 rounded-full bg-[var(--bg-card)] text-[var(--text-muted)]"><X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden shadow-md mb-6">
-                            <img src={itinerary.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={itinerary.title} className="w-full h-full object-cover" />
-                            <WashiTape color="var(--washi-coral)" className="top-3 left-3 w-24 -rotate-6" />
-                        </div>
-                        <h2 className="font-display text-2xl font-bold leading-snug">{itinerary.title}</h2>
-                        <p className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-1.5 mt-2"><MapPin className="w-4 h-4 text-[var(--accent-primary)]" /><span>{destination}</span></p>
-                        <div className="mt-6 space-y-2.5 pt-6 border-t border-[var(--border-color)] text-xs font-semibold">
-                            <div className="flex justify-between"><span className="text-[var(--text-muted)]">Ngân sách dự kiến:</span><span className="text-[var(--accent-gold)] font-bold text-sm">{itinerary.estimated_cost ? itinerary.estimated_cost.toLocaleString('vi-VN') + " đ" : "Tự túc"}</span></div>
-                            <div className="flex justify-between"><span className="text-[var(--text-muted)]">Tác giả lộ trình:</span><span>{itinerary.user_id?.name || currentUser?.name}</span></div>
-                        </div>
-                    </div>
-                    <div className="mt-8 pt-4 flex gap-3">
-                        <button onClick={() => { onClone(); onClose(); }} className="flex-1 py-3 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-xs shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2"><BookmarkPlus className="w-4 h-4" /> Clone vào sổ tay</button>
-                        <button onClick={() => notify("Đã sao chép liên kết chia sẻ lộ trình!", "🔗")} className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors" title="Chia sẻ"><Share2 className="w-4 h-4" /></button>
-                    </div>
-                </div>
-                <div className="flex-1 flex flex-col overflow-hidden bg-[var(--bg-paper)]">
-                    <div className="flex items-center justify-between p-6 border-b border-[var(--border-color)] bg-[var(--bg-card)]">
-                        <div className="flex gap-2">
-                            <button onClick={() => setActiveTab("itinerary")} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "itinerary" ? "bg-[var(--text-main)] text-[var(--bg-paper)] shadow-sm" : "bg-[var(--bg-paper)] text-[var(--text-muted)] hover:text-[var(--text-main)]"}`}><Navigation className="w-3.5 h-3.5" /> Lịch trình</button>
-                            <button onClick={() => setActiveTab("checklist")} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "checklist" ? "bg-[var(--text-main)] text-[var(--bg-paper)] shadow-sm" : "bg-[var(--bg-paper)] text-[var(--text-muted)] hover:text-[var(--text-main)]"}`}><Luggage className="w-3.5 h-3.5" /> Hành trang ({checklist.filter((c) => c.checked).length}/{checklist.length})</button>
-                        </div>
-                        <button onClick={onClose} className="hidden md:flex p-2 rounded-full hover:bg-[var(--bg-paper)] text-[var(--text-muted)] transition-colors"><X className="w-5 h-5" /></button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-                        {activeTab === "itinerary" ? (
-                            itinerary.itinerary_days && itinerary.itinerary_days.length > 0 ? (
-                                <div className="space-y-8 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-[var(--border-color)]">
-                                    {itinerary.itinerary_days.map((plan: Itinerary_days) => (
-                                        <div key={plan.id} className="relative pl-8">
-                                            <div className="absolute left-0 top-0 w-7 h-7 rounded-full bg-[var(--accent-gold)] text-white font-display font-bold text-xs flex items-center justify-center shadow-sm z-10">D{plan.day_number}</div>
-                                            <h4 className="font-display font-bold text-base">{plan.title || `Ngày ${plan.day_number}`}</h4>
-                                            <div className="mt-3 space-y-2.5">
-                                                {plan.itinerary_locations.length > 0 ? (
-                                                    plan.itinerary_locations.map((loc: Itinerary_locations) => (
-                                                        <div key={loc.id} className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-medium leading-relaxed flex items-start gap-2.5 shadow-sm">
-                                                            <Coffee className="w-4 h-4 text-[var(--accent-primary)] shrink-0 mt-0.5" />
-                                                            <div>
-                                                                <span className="font-bold">{loc.start_time.slice(0, 5)} - {loc.location_name}</span>
-                                                                {loc.activity_note && <p className="text-[var(--text-muted)] mt-1">{loc.activity_note}</p>}
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-xs text-[var(--text-muted)]">Chưa thêm hoạt động nào.</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12 text-[var(--text-muted)]"><Compass className="w-10 h-10 mx-auto opacity-30 mb-2 animate-spin-slow" /><p className="text-sm font-medium">Lộ trình chi tiết đang được cập nhật...</p></div>
-                            )
-                        ) : (
-                            <div className="space-y-3">
-                                <p className="font-hand text-base text-[var(--text-muted)] mb-4">* Chạm vào từng món đồ để đánh dấu đã chuẩn bị:</p>
-                                {checklist.map((item, idx) => (
-                                    <div key={idx} onClick={() => toggleCheck(idx)} className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-sm font-semibold ${item.checked ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 line-through opacity-80" : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--text-main)]"}`}>
-                                        <span>{item.item}</span>
-                                        {item.checked ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" /> : <Circle className="w-5 h-5 text-[var(--text-muted)] shrink-0" />}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </motion.div>
-        </div>
-    );
-}
-
-// AI Planner Modal (giữ nguyên)
-function AiPlannerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (trip: Itinerary) => void }) {
-    const [prompt, setPrompt] = useState("");
-    const [days, setDays] = useState(3);
-    const [style, setStyle] = useState("Thư giãn & Healing");
-    const [budgetLevel, setBudgetLevel] = useState("Trung bình");
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [stepText, setStepText] = useState("");
-
-    const handleGenerate = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!prompt.trim()) { notify("Vui lòng nhập điểm đến hoặc ý tưởng chuyến đi", "⚠️"); return; }
-        setIsGenerating(true);
-        const steps = ["AI đang phân tích thời tiết & mùa du lịch...", "Đang tổng hợp các quán ăn local ngon-bổ-rẻ...", "Đang vẽ bản đồ di chuyển tối ưu nhất...", "Đang tối ưu ngân sách theo phong cách của bạn...", "Hoàn tất! Đang đóng gói lộ trình..."];
-        let stepIdx = 0;
-        const interval = setInterval(() => { setStepText(steps[stepIdx % steps.length]); stepIdx++; if (stepIdx === steps.length) clearInterval(interval); }, 800);
-        setTimeout(() => {
-            clearInterval(interval);
-            const newItinerary: Itinerary = {
-                id: `ai-${Date.now()}`, title: `Lộ trình ${days} ngày: ${prompt}`, summary: `Lộ trình cá nhân hóa bởi AI Travel Agent (${style})`, start_date: new Date().toISOString(), end_date: new Date(Date.now() + days * 86400000).toISOString(), theme: `${style.split(" ")[0]}, AI Gợi ý`, days: days, nights: days - 1, estimated_cost: days * 1500000 + (budgetLevel === "Cao" ? 2000000 : budgetLevel === "Thấp" ? -1000000 : 0), image_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop", share: false, user_id: { name: "AI Agent 🤖", avatar: "🤖", id: "", email: "", role: "USER", status: "active", created_at: "", itineraries: [], phone_number: 0 }, itinerary_provinces: [{ provinces: { name: prompt.split(" ")[0] || "Việt Nam", id: "" } }], itinerary_days: [{ id: `day1-${Date.now()}`, day_number: 1, title: "Khám phá bản sắc địa phương", itinerary_locations: [{ id: "loc1", day_id: "", location_id: "", sequence_order: 1, cost: 0, lat: 0, lng: 0, start_time: "08:00", end_time: "09:00", location_name: "Ăn sáng đặc sản địa phương", activity_note: "Trải nghiệm ẩm thực không thể bỏ qua" }] }]
-            };
-            onSuccess(newItinerary);
-        }, 4000);
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isGenerating && onClose()} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 overflow-hidden">
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-gold)] rounded-full blur-3xl opacity-20 pointer-events-none" />
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--accent-primary)] to-[var(--accent-gold)] flex items-center justify-center text-white shadow-md"><Sparkles className="w-5 h-5 animate-spin-slow" /></div>
-                        <div><h3 className="font-display font-bold text-lg">AI Travel Designer</h3><p className="text-xs text-[var(--text-muted)] font-medium">Soạn thảo lộ trình cá nhân hóa trong vài giây</p></div>
-                    </div>
-                    <button onClick={onClose} disabled={isGenerating} className="p-2 rounded-full hover:bg-[var(--bg-paper)] text-[var(--text-muted)] transition-colors disabled:opacity-50"><X className="w-5 h-5" /></button>
-                </div>
-                {isGenerating ? (
-                    <div className="py-12 text-center flex flex-col items-center justify-center space-y-4">
-                        <div className="relative w-16 h-16"><div className="absolute inset-0 rounded-full border-4 border-[var(--accent-primary)]/20 animate-ping" /><div className="w-full h-full rounded-full border-4 border-t-[var(--accent-primary)] border-r-[var(--accent-gold)] border-b-transparent border-l-transparent animate-spin" /><CompassIcon className="w-6 h-6 text-[var(--accent-primary)] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" /></div>
-                        <h4 className="font-display font-bold text-base animate-pulse text-[var(--text-main)]">{stepText}</h4>
-                    </div>
-                ) : (
-                    <form onSubmit={handleGenerate} className="space-y-5">
-                        <div><label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Bạn muốn đi đâu hoặc trải nghiệm gì? *</label><textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="VD: Phú Yên 3 ngày cùng nhóm bạn 4 người..." className="w-full p-4 rounded-2xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-medium outline-none focus:border-[var(--accent-primary)] transition-colors resize-none leading-relaxed" required /></div>
-                        <div className="flex flex-wrap gap-1.5 pt-1">{["Nghỉ dưỡng Đà Lạt", "Food Tour Hải Phòng", "Phượt xe máy Hà Giang", "Biển Phú Quý"].map((hint) => (<button key={hint} type="button" onClick={() => setPrompt(hint)} className="text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-[var(--text-muted)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-all">+ {hint}</button>))}</div>
-                        <div className="grid grid-cols-2 gap-4 pt-2">
-                            <div><label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Thời gian</label><select value={days} onChange={(e) => setDays(Number(e.target.value))} className="w-full p-3.5 rounded-2xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold outline-none focus:border-[var(--accent-primary)] transition-colors"><option value={2}>2 Ngày 1 Đêm</option><option value={3}>3 Ngày 2 Đêm</option><option value={4}>4 Ngày 3 Đêm</option><option value={5}>5 Ngày 4 Đêm</option></select></div>
-                            <div><label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Phong cách</label><select value={style} onChange={(e) => setStyle(e.target.value)} className="w-full p-3.5 rounded-2xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold outline-none focus:border-[var(--accent-primary)] transition-colors"><option value="Thư giãn & Healing">🌿 Chữa lành & Chill</option><option value="Ẩm thực & Food Tour">🍜 Ăn sập địa phương</option><option value="Nhiếp ảnh & Check-in">📸 Sống ảo & Cafe</option><option value="Trekking & Khám phá">⛰️ Mạo hiểm & Trekking</option></select></div>
-                        </div>
-                        <div><label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Mức ngân sách</label><select value={budgetLevel} onChange={(e) => setBudgetLevel(e.target.value)} className="w-full p-3.5 rounded-2xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold outline-none focus:border-[var(--accent-primary)] transition-colors"><option value="Thấp">💰 Tiết kiệm</option><option value="Trung bình">💰💰 Trung bình</option><option value="Cao">💰💰💰 Cao cấp</option></select></div>
-                        <div className="pt-4 flex items-center justify-end gap-3 border-t border-[var(--border-color)]"><button type="button" onClick={onClose} className="px-5 py-3 rounded-xl text-xs font-bold text-[var(--text-muted)] hover:bg-[var(--bg-paper)] transition-colors">Hủy bỏ</button><button type="submit" className="px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-gold)] text-white text-xs font-bold shadow-lg shadow-[var(--accent-primary)]/25 hover:opacity-95 transition-all flex items-center gap-2"><Send className="w-3.5 h-3.5" /><span>Bắt đầu tạo lộ trình</span></button></div>
-                    </form>
-                )}
-            </motion.div>
-        </div>
-    );
-}
-
-// Create Trip Modal (giữ nguyên)
 function CreateTripModal({ onClose, onSuccess, currentUser }: { onClose: () => void; onSuccess: (trip: Itinerary) => void; currentUser: User | null }) {
     const [title, setTitle] = useState("");
     const [destination, setDestination] = useState("");

@@ -25,14 +25,13 @@ const NavItems = [
     { id: "dashboard", label: "Khám phá", icon: Compass, path: '/' },
     { id: "trips", label: "Lộ trình của tôi", icon: FolderKanban, path: '/MyItinerary' },
     { id: "wishlist", label: "Yêu thích", icon: Heart },
-    { id: "community", label: "Cộng đồng", icon: UserIcon },
+    { id: "community", label: "Cộng đồng", icon: UserIcon, path: '/Community' },
     { id: "ai-planner", label: "AI Planner", icon: Sparkles },
 ];
 
 export const AppHeader = ({
     setActiveNav,
     setIsAiModalOpen,
-    notify,
     setIsCreatingTrip,
     setTheme,
     currentUser,
@@ -53,9 +52,6 @@ export const AppHeader = ({
         }
         else if (item.id === "ai-planner") {
             setIsAiModalOpen(true);
-        }
-        else if (item.id === "community") {
-            notify("Tính năng cộng đồng đang phát triển", "🌐");
         }
     };
 
