@@ -113,7 +113,7 @@ export default function JournifyUserDashboard() {
     }, [theme]);
 
     const handleCloneTrip = async (iti: Itinerary) => {
-        const toastId = toast.loading("Đang chuẩn bị hành trang...");
+        const toastId = toast.loading("Đang clone...");
         try {
             const { data: responseData, response: full_response } = await api.get(`/itineraries/${iti.id}`);
             if (!full_response.ok) throw new Error(responseData.message || "Lỗi khi lấy dữ liệu lộ trình");
@@ -176,7 +176,6 @@ export default function JournifyUserDashboard() {
                             setSearchQuery={setSearchQuery}
                             setIsAiModalOpen={setIsAiModalOpen}
                         />
-                        {/* Lộ trình nổi bật */}
                         <div>
                             <TrendingItinerary
                                 trendingItineraries={trendingItineraries}
@@ -185,9 +184,7 @@ export default function JournifyUserDashboard() {
                                 setActiveNav={setActiveNav}
                             />
                         </div>
-                        {/* Khám phá theo vùng miền */}
                         <RegionExplore />
-                        {/* Bài viết & Mẹo du lịch */}
                         <section>
                             <div className="flex items-center justify-between mb-6">
                                 <div>

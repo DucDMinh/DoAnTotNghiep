@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
@@ -33,9 +34,19 @@ export default function MyItineraryPage() {
             }
         });
     }, [itineraries, activeTab]);
-    const handleDelete = (id: string) => {
-        setItineraries(prev => prev.filter(iti => iti.id !== id));
-        toast.success("Đã xóa lộ trình vào thùng rác");
+    const handleDelete = async (id: string) => {
+        const toastId = toast.loading("Đang xóa...");
+        try {
+            const { data, response } = await api.delete(`/itineraries/${id}`);
+            if (!response.ok) {
+                throw new Error("Failed to delete itinerary");
+            }
+            toast.success(`Xóa "${data.data.title}" thành công`, { id: toastId });
+            setItineraries(prev => prev.filter(iti => iti.id !== id));
+        } catch (err: any) {
+            console.error("Lỗi xóa:", err);
+            toast.error(err.message || "Có lỗi xảy ra khi xóa lộ trình", { id: toastId });
+        }
     };
     const { user: currentUser } = useAuth();
 
