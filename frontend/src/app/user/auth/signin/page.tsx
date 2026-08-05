@@ -54,10 +54,11 @@ export default function AuthScreen() {
       if (response.ok && result.success) {
         toast.remove(toastId);
         login(result.token, result.user);
+        toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
         setTimeout(() => {
+          toast.remove(toastId);
           router.push('/');
         }, 500);
-        toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
       } else {
         toast.error(result.message || "Có lỗi xảy ra, vui lòng thử lại.", { id: toastId });
       }

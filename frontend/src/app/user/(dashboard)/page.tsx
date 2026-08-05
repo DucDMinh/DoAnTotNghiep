@@ -1,63 +1,33 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/purity */
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Compass,
-    MapPin,
     Sparkles,
-    TrendingUp,
     ChevronRight,
-    Heart,
     Clock,
     X,
     Award,
-    Compass as CompassIcon,
     Edit3,
-    Clock as ClockIcon,
-    Image as ImageIcon,
 } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import confetti from "canvas-confetti";
-import { Itinerary, Itinerary_days, Itinerary_locations, Location, User } from "@/interface";
+import { Itinerary, Location, User } from "@/interface";
 import { api } from "@/lib/apiClient";
-import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import {
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent,
-} from "@dnd-kit/core";
-import {
-    arrayMove,
-    sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { UserBanner } from "@/components/user/HomePage/UserBanner";
-import { TrendingCard } from "@/components/user/HomePage/TrendingCard";
+import { TrendingItinerary } from "@/components/user/HomePage/TrendingItinerary";
 import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
-
-
-interface StarRatingProps {
-    rating: number;
-    maxStars?: number;
-    size?: string;
-}
-
-interface Region {
-    name: string;
-    image: string;
-    count: number;
-    color: string;
-}
+import { RegionExplore } from "@/components/user/HomePage/RegionExplore";
+import { WishlistPreview } from "@/components/user/HomePage/WishlistPreview";
+import { useNotify } from "@/app/user/(dashboard)/layout";
 
 interface BlogTip {
     title: string;
@@ -65,46 +35,6 @@ interface BlogTip {
     tag: string;
     readTime: string;
 }
-
-// ============== CONSTANTS ==============
-const StarIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-    <svg
-        className={className}
-        style={style}
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-    >
-        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-);
-
-const REGIONS: Region[] = [
-    {
-        name: "Miền Bắc",
-        image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=600&auto=format&fit=crop",
-        count: 24,
-        color: "from-rose-500 to-amber-500",
-    },
-    {
-        name: "Miền Trung",
-        image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=600&auto=format&fit=crop",
-        count: 18,
-        color: "from-emerald-500 to-teal-500",
-    },
-    {
-        name: "Miền Nam",
-        image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=600&auto=format&fit=crop",
-        count: 30,
-        color: "from-orange-500 to-yellow-500",
-    },
-    {
-        name: "Tây Nguyên",
-        image: "https://images.unsplash.com/photo-1599707367077-ca3e5c2e9a9c?q=80&w=600&auto=format&fit=crop",
-        count: 12,
-        color: "from-purple-500 to-indigo-500",
-    },
-];
 
 const BLOG_TIPS: BlogTip[] = [
     {
@@ -126,8 +56,6 @@ const BLOG_TIPS: BlogTip[] = [
         readTime: "7 phút",
     },
 ];
-
-// ============== UTILITY FUNCTIONS ==============
 function triggerConfetti() {
     confetti({
         particleCount: 50,
@@ -137,56 +65,6 @@ function triggerConfetti() {
     });
 }
 
-function notify(
-    msg: string,
-    icon: string = "✨",
-    type: "default" | "success" = "default"
-) {
-    toast(
-        <div className="flex items-center gap-2.5 font-medium text-sm">
-            <span className="text-lg">{icon}</span>
-            <span>{msg}</span>
-        </div>,
-        {
-            style: {
-                borderRadius: "16px",
-                background: "var(--bg-card)",
-                color: "var(--text-main)",
-                border: "1px solid var(--border-color)",
-                boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
-                padding: "12px 16px",
-            },
-        }
-    );
-}
-
-
-function StarRating({ rating, maxStars = 5, size = "w-5 h-5" }: StarRatingProps) {
-    return (
-        <div className="flex items-center gap-1">
-            {[...Array(maxStars)].map((_, index) => {
-                const fillPercentage = Math.max(0, Math.min(100, (rating - index) * 100));
-
-                return (
-                    <div key={index} className={`relative ${size}`}>
-                        <StarIcon className={`${size} text-gray-300 absolute top-0 left-0`} />
-                        <StarIcon
-                            className={`${size} text-yellow-400 absolute top-0 left-0`}
-                            style={{
-                                clipPath: `inset(0 ${100 - fillPercentage}% 0 0)`,
-                            }}
-                        />
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
-// ============== NAVIGATION ITEMS ==============
-
-
-// ============== MAIN USER-FRIENDLY COMPONENT ==============
 export default function JournifyUserDashboard() {
     const [theme, setTheme] = useState<"day" | "night">("day");
     const [searchQuery, setSearchQuery] = useState("");
@@ -197,21 +75,9 @@ export default function JournifyUserDashboard() {
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isCreatingTrip, setIsCreatingTrip] = useState(false);
-    const [filterRegion, setFilterRegion] = useState<string>("all");
-    const [filterDuration, setFilterDuration] = useState<string>("all");
-    const [filterBudget, setFilterBudget] = useState<string>("all");
-    const [sortBy, setSortBy] = useState<"date" | "budget" | "title">("date");
-    const [viewMode, setViewMode] = useState<"grid" | "calendar">("grid");
 
+    const notify = useNotify();
     const { user: currentUser } = useAuth();
-
-
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
 
     const fetchItineraries = async () => {
         try {
@@ -246,41 +112,6 @@ export default function JournifyUserDashboard() {
         document.documentElement.classList.toggle("theme-night", theme === "night");
     }, [theme]);
 
-    const filteredItineraries = useMemo(() => {
-        const result = itineraries.filter((iti) => {
-            const matchesSearch =
-                iti.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                iti.itinerary_provinces?.some(p => p.provinces?.name.toLowerCase().includes(searchQuery.toLowerCase()));
-            const matchesRegion =
-                filterRegion === "all" ||
-                iti.itinerary_provinces?.some(p => p.provinces?.name === filterRegion);
-            const matchesDuration =
-                filterDuration === "all" ||
-                (filterDuration === "short" && (iti.days || 0) <= 3) ||
-                (filterDuration === "medium" && (iti.days || 0) > 3 && (iti.days || 0) <= 5) ||
-                (filterDuration === "long" && (iti.days || 0) > 5);
-            const matchesBudget =
-                filterBudget === "all" ||
-                (filterBudget === "low" && (iti.estimated_cost || 0) < 2000000) ||
-                (filterBudget === "medium" && (iti.estimated_cost || 0) >= 2000000 && (iti.estimated_cost || 0) < 5000000) ||
-                (filterBudget === "high" && (iti.estimated_cost || 0) >= 5000000);
-            return matchesSearch && matchesRegion && matchesDuration && matchesBudget;
-        });
-
-        switch (sortBy) {
-            case "date":
-                result.sort((a, b) => (a.start_date ? new Date(a.start_date).getTime() : 0) - (b.start_date ? new Date(b.start_date).getTime() : 0));
-                break;
-            case "budget":
-                result.sort((a, b) => (a.estimated_cost || 0) - (b.estimated_cost || 0));
-                break;
-            case "title":
-                result.sort((a, b) => a.title.localeCompare(b.title));
-                break;
-        }
-        return result;
-    }, [itineraries, searchQuery, filterRegion, filterDuration, filterBudget, sortBy]);
-
     const handleCloneTrip = (iti: Itinerary) => {
         triggerConfetti();
         const cloned: Itinerary = {
@@ -293,22 +124,6 @@ export default function JournifyUserDashboard() {
         notify(`Đã lưu "${iti.title}" vào sổ tay của bạn!`, "📌");
     };
 
-    const toggleLike = (id: string) => notify("Đã thêm vào danh sách yêu thích!", "❤️");
-    const removeWishlist = (id: string) => {
-        setWishlist((prev) => prev.filter((item) => item.id !== id));
-        notify("Đã xóa khỏi Wishlist", "🗑️");
-    };
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        if (over && active.id !== over.id) {
-            const oldIndex = itineraries.findIndex((i) => i.id === active.id);
-            const newIndex = itineraries.findIndex((i) => i.id === over.id);
-            setItineraries((items) => arrayMove(items, oldIndex, newIndex));
-        }
-    };
-
-    // Personal stats tính toán nhanh
     const personalStats = useMemo(() => {
         return {
             totalTrips: itineraries.length,
@@ -331,71 +146,15 @@ export default function JournifyUserDashboard() {
                             setIsAiModalOpen={setIsAiModalOpen}
                         />
                         {/* Lộ trình nổi bật */}
-                        <section>
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h2 className="font-display text-2xl font-bold flex items-center gap-2">
-                                        <TrendingUp className="w-6 h-6 text-[var(--accent-primary)]" /> Lộ trình nổi bật
-                                    </h2>
-                                    <p className="text-sm text-[var(--text-muted)] mt-1">Được cộng đồng yêu thích nhất tuần này</p>
-                                </div>
-                                <button
-                                    onClick={() => setActiveNav("trips")}
-                                    className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"
-                                >
-                                    Xem tất cả <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {trendingItineraries.map((trip, idx) => (
-                                    <TrendingCard
-                                        key={trip.id}
-                                        trip={trip}
-                                        rank={idx + 1}
-                                        onOpen={() => setActiveTripDetail(trip)}
-                                        onClone={() => handleCloneTrip(trip)}
-                                    />
-                                ))}
-                                {trendingItineraries.length === 0 && (
-                                    <div className="col-span-full text-center py-10 text-[var(--text-muted)]">
-                                        <Compass className="w-10 h-10 mx-auto opacity-30 mb-2" />
-                                        <p>Chưa có lộ trình nổi bật. Hãy là người đầu tiên chia sẻ!</p>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
+                        <TrendingItinerary
+                            trendingItineraries={trendingItineraries}
+                            setActiveTripDetail={setActiveTripDetail}
+                            handleCloneTrip={handleCloneTrip}
+                            setActiveNav={setActiveNav}
+                        />
 
                         {/* Khám phá theo vùng miền */}
-                        <section>
-                            <div className="mb-6">
-                                <h2 className="font-display text-2xl font-bold flex items-center gap-2">
-                                    <MapPin className="w-6 h-6 text-rose-500" /> Khám phá theo vùng miền
-                                </h2>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">Chọn một vùng đất để bắt đầu hành trình</p>
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {REGIONS.map((region) => (
-                                    <motion.div
-                                        key={region.name}
-                                        whileHover={{ y: -5 }}
-                                        className="relative rounded-2xl overflow-hidden h-40 md:h-48 cursor-pointer group shadow-sm"
-                                        onClick={() => {
-                                            setFilterRegion(region.name);
-                                            setActiveNav("trips");
-                                        }}
-                                    >
-                                        <img src={region.image} alt={region.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                                            <h3 className="font-bold text-lg">{region.name}</h3>
-                                            <p className="text-xs opacity-80">{region.count} lộ trình</p>
-                                        </div>
-                                        <div className={`absolute top-3 right-3 w-8 h-8 rounded-full bg-gradient-to-br ${region.color} opacity-90 shadow-lg`} />
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </section>
-
+                        <RegionExplore />
                         {/* Bài viết & Mẹo du lịch */}
                         <section>
                             <div className="flex items-center justify-between mb-6">
@@ -484,56 +243,7 @@ export default function JournifyUserDashboard() {
                             </div>
 
                             {/* Wishlist preview */}
-                            <div className="lg:col-span-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-display text-lg font-bold flex items-center gap-2">
-                                        <Heart className="w-5 h-5 text-rose-500" /> Các điểm đến được yêu thích
-                                    </h3>
-                                    <button
-                                        onClick={() => setActiveNav("wishlist")}
-                                        className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"
-                                    >
-                                        Xem tất cả <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                {wishlist.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {wishlist.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                onClick={() => notify(`Khám phá ${item.name}`, "🗺️")}
-                                                className="flex gap-3 p-2 rounded-xl hover:bg-[var(--bg-paper)] transition cursor-pointer"
-                                            >
-                                                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                                                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h4 className="text-sm font-bold truncate">{item.name}</h4>
-                                                    <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-1">
-                                                        <MapPin className="w-3 h-3" /> {item.provinces?.name}
-                                                    </p>
-
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <StarRating rating={item.rating || 0} size="w-4 h-4" />
-                                                        <span className="text-sm text-gray-500 font-medium">{item.rating} / 5.0</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-6 text-[var(--text-muted)]">
-                                        <Heart className="w-8 h-8 mx-auto opacity-30 mb-2" />
-                                        <p className="text-sm">Chưa có điểm yêu thích. Hãy thêm ngay!</p>
-                                    </div>
-                                )}
-                                <button
-                                    onClick={() => setIsAiModalOpen(true)}
-                                    className="mt-4 w-full py-2.5 rounded-xl bg-rose-500/10 text-rose-500 text-sm font-bold hover:bg-rose-500 hover:text-white transition flex items-center justify-center gap-2"
-                                >
-                                    <Sparkles className="w-4 h-4" /> Gợi ý điểm đến bằng AI
-                                </button>
-                            </div>
+                            <WishlistPreview wishlist={wishlist} setIsAiModalOpen={setIsAiModalOpen} />
                         </section>
 
                         {/* Gợi ý từ AI (Call to Action) */}
@@ -567,17 +277,14 @@ export default function JournifyUserDashboard() {
             </AnimatePresence>
             <AnimatePresence>
                 {isCreatingTrip && (
-                    <CreateTripModal currentUser={currentUser} onClose={() => setIsCreatingTrip(false)} onSuccess={(trip) => { setItineraries([trip, ...itineraries]); setIsCreatingTrip(false); notify("Đã tạo lộ trình mới thành công!", "✅", "success"); }} />
+                    <CreateTripModal notify={notify} currentUser={currentUser} onClose={() => setIsCreatingTrip(false)} onSuccess={(trip) => { setItineraries([trip, ...itineraries]); setIsCreatingTrip(false); notify("Đã tạo lộ trình mới thành công!", "success"); }} />
                 )}
             </AnimatePresence>
         </div>
     );
 }
 
-
-
-
-function CreateTripModal({ onClose, onSuccess, currentUser }: { onClose: () => void; onSuccess: (trip: Itinerary) => void; currentUser: User | null }) {
+function CreateTripModal({ onClose, onSuccess, currentUser, notify }: { onClose: () => void; onSuccess: (trip: Itinerary) => void; currentUser: User | null; notify: (message: string, type: string) => void }) {
     const [title, setTitle] = useState("");
     const [destination, setDestination] = useState("");
     const [days, setDays] = useState(3);

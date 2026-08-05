@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { User } from "@/interface";
-import { Compass, CompassIcon, FolderKanban, Heart, LogIn, LogOut, Moon, PlusCircle, Settings, Sparkles, Sun, User as UserIcon } from "lucide-react";
+import { Compass, CompassIcon, FolderKanban, LogIn, LogOut, Moon, Newspaper, PlusCircle, Settings, Sparkles, Sun, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import NextLink from "next/link";
@@ -24,7 +24,7 @@ interface AppHeaderProp {
 const NavItems = [
     { id: "dashboard", label: "Khám phá", icon: Compass, path: '/' },
     { id: "trips", label: "Lộ trình của tôi", icon: FolderKanban, path: '/MyItinerary' },
-    { id: "wishlist", label: "Yêu thích", icon: Heart },
+    { id: "wishlist", label: "Blog", icon: Newspaper, path: '/Blog' },
     { id: "community", label: "Cộng đồng", icon: UserIcon, path: '/Community' },
     { id: "ai-planner", label: "AI Planner", icon: Sparkles },
 ];
