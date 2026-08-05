@@ -15,65 +15,11 @@ import { Itinerary } from "@/interface";
 import { MyItineraryCard } from "@/components/user/MyItinerary/MyItineraryCard";
 import { api } from "@/lib/apiClient";
 import { useAuth } from "@/hooks/auth/AuthContext";
-const MOCK_MY_ITINERARIES: Itinerary[] = [
-    {
-        id: "iti-1",
-        title: "Đà Lạt 3 Ngày - Trốn phố về rừng",
-        summary: "Chuyến đi chữa lành ngắm hoàng hôn và săn mây đồi Đa Phú",
-        start_date: "2026-08-15T00:00:00.000Z",
-        end_date: "2026-08-17T00:00:00.000Z",
-        theme: "Thư giãn & Healing",
-        days: 3,
-        nights: 2,
-        estimated_cost: 3200000,
-        image_url: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=800",
-        share: false, // Lộ trình riêng tư
-        user_id: null,
-        itinerary_provinces: [
-            { province_id: "p1", provinces: { id: "p1", name: "Lâm Đồng", description: "" } }
-        ],
-        itinerary_days: []
-    },
-    {
-        id: "iti-2",
-        title: "Hà Giang - Chinh phục Mã Pì Lèng",
-        summary: "Hành trình thanh xuân rực rỡ nhất",
-        start_date: "2026-05-10T00:00:00.000Z", // Đã hoàn thành (Quá khứ)
-        end_date: "2026-05-13T00:00:00.000Z",
-        theme: "Trekking & Khám phá",
-        days: 4,
-        nights: 3,
-        estimated_cost: 4500000,
-        image_url: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800",
-        share: true, // Đã chia sẻ cho cộng đồng
-        user_id: null,
-        itinerary_provinces: [
-            { province_id: "p2", provinces: { id: "p2", name: "Hà Giang", description: "" } }
-        ],
-        itinerary_days: []
-    },
-    {
-        id: "iti-3",
-        title: "Food Tour Hải Phòng trong ngày",
-        summary: "Ăn sập phố cảng với ngân sách sinh viên",
-        start_date: "2026-09-02T00:00:00.000Z",
-        end_date: "2026-09-02T00:00:00.000Z",
-        theme: "Ẩm thực & Food Tour",
-        days: 1,
-        nights: 0,
-        estimated_cost: 850000,
-        image_url: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800",
-        share: true,
-        user_id: null,
-        itinerary_provinces: [
-            { province_id: "p3", provinces: { id: "p3", name: "Hải Phòng", description: "" } }
-        ],
-        itinerary_days: []
-    }
-];
+import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
 
 export default function MyItineraryPage() {
-    const [itineraries, setItineraries] = useState<Itinerary[]>(MOCK_MY_ITINERARIES);
+    const [itineraries, setItineraries] = useState<Itinerary[]>([]);
+    const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "past">("all");
     const filteredItineraries = useMemo(() => {
         const now = new Date();
@@ -179,12 +125,18 @@ export default function MyItineraryPage() {
                                 key={itinerary.id}
                                 itinerary={itinerary}
                                 index={index}
+                                onOpen={() => setActiveTripDetail(itinerary)}
                                 onDelete={() => handleDelete(itinerary.id)}
                             />
                         ))}
                     </AnimatePresence>
                 </div>
             )}
+            <AnimatePresence>
+                {activeTripDetail && (
+                    <TripDetailModal currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => { }} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

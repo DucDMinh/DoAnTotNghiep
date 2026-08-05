@@ -31,40 +31,51 @@ function TrendingCard({ trip, rank, onOpen, onClone }: { trip: Itinerary; rank: 
 
 export const TrendingItinerary = ({ trendingItineraries, setActiveTripDetail, handleCloneTrip, setActiveNav }: TrendingItineraryProps) => {
     return (
-        <>
-            <section>
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="font-display text-2xl font-bold flex items-center gap-2">
-                            <TrendingUp className="w-6 h-6 text-[var(--accent-primary)]" /> Lộ trình nổi bật
-                        </h2>
-                        <p className="text-sm text-[var(--text-muted)] mt-1">Được cộng đồng yêu thích nhất tuần này</p>
-                    </div>
-                    <button
-                        onClick={() => setActiveNav("trips")}
-                        className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"
-                    >
-                        Xem tất cả <ChevronRight className="w-4 h-4" />
-                    </button>
+        <section className="w-full min-w-0"> {/* 🌟 Khóa chiều rộng, chống vỡ layout */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h2 className="font-display text-2xl font-bold flex items-center gap-2">
+                        <TrendingUp className="w-6 h-6 text-[var(--accent-primary)]" /> Lộ trình nổi bật
+                    </h2>
+                    <p className="text-sm text-[var(--text-muted)] mt-1">Được cộng đồng yêu thích nhất tuần này</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {trendingItineraries.map((trip, idx) => (
+                <button
+                    onClick={() => setActiveNav("trips")}
+                    className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"
+                >
+                    Xem tất cả <ChevronRight className="w-4 h-4" />
+                </button>
+            </div>
+            <div
+                className="flex overflow-x-auto gap-4 sm:gap-6 pb-6 snap-x snap-mandatory w-full 
+                [&::-webkit-scrollbar]:h-2 
+                [&::-webkit-scrollbar-track]:bg-transparent 
+                [&::-webkit-scrollbar-thumb]:bg-[var(--border-color)] 
+                hover:[&::-webkit-scrollbar-thumb]:bg-[var(--text-muted)] 
+                [&::-webkit-scrollbar-thumb]:rounded-full 
+                transition-colors"
+            >
+                {trendingItineraries.map((trip, idx) => (
+                    <div
+                        key={trip.id}
+                        className="snap-start shrink-0 w-[85vw] sm:w-[350px]"
+                    >
                         <TrendingCard
-                            key={trip.id}
                             trip={trip}
                             rank={idx + 1}
                             onOpen={() => setActiveTripDetail(trip)}
                             onClone={() => handleCloneTrip(trip)}
                         />
-                    ))}
-                    {trendingItineraries.length === 0 && (
-                        <div className="col-span-full text-center py-10 text-[var(--text-muted)]">
-                            <Compass className="w-10 h-10 mx-auto opacity-30 mb-2" />
-                            <p>Chưa có lộ trình nổi bật. Hãy là người đầu tiên chia sẻ!</p>
-                        </div>
-                    )}
-                </div>
-            </section>
-        </>
+                    </div>
+                ))}
+
+                {trendingItineraries.length === 0 && (
+                    <div className="w-full flex flex-col items-center justify-center text-center py-10 text-[var(--text-muted)]">
+                        <Compass className="w-10 h-10 mx-auto opacity-30 mb-2" />
+                        <p>Chưa có lộ trình nổi bật. Hãy là người đầu tiên chia sẻ!</p>
+                    </div>
+                )}
+            </div>
+        </section>
     )
 }

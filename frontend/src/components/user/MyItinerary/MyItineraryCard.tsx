@@ -23,11 +23,13 @@ function WashiTape({ color = "var(--washi-teal)", className = "" }: { color?: st
 export function MyItineraryCard({
     itinerary,
     index,
-    onDelete
+    onDelete,
+    onOpen
 }: {
     itinerary: Itinerary;
     index: number;
     onDelete: () => void;
+    onOpen: () => void;
 }) {
     const tilts = [-2, 1.5, -1, 2, -1.5, 1];
     const defaultRotate = tilts[index % tilts.length];
@@ -58,7 +60,7 @@ export function MyItineraryCard({
                     <Lock className="w-4 h-4 text-[var(--text-muted)]" aria-label="Riêng tư" />
                 )}
             </div>
-            <div>
+            <div onClick={onOpen}>
                 <div className="relative h-48 w-full rounded-[16px] overflow-hidden bg-slate-100 cursor-pointer">
                     <img
                         src={itinerary.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'}

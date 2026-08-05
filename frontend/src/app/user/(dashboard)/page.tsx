@@ -15,7 +15,7 @@ import {
     Award,
     Edit3,
 } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import { toast, Toaster } from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { Itinerary, Location, User } from "@/interface";
 import { api } from "@/lib/apiClient";
@@ -86,7 +86,7 @@ export default function JournifyUserDashboard() {
             const itineraries_data: Itinerary[] = data?.data?.data || data?.data || data || [];
             setItineraries(itineraries_data);
             const trending = itineraries_data.filter(i => i.share).slice(0, 3);
-            setTrendingItineraries(trending.length > 0 ? trending : itineraries_data.slice(0, 3));
+            setTrendingItineraries(trending.length > 0 ? trending : itineraries_data.slice(0, 5));
         } catch (error: any) {
             notify(error.message || "Không thể tải dữ liệu", "⚠️");
         }
@@ -112,16 +112,47 @@ export default function JournifyUserDashboard() {
         document.documentElement.classList.toggle("theme-night", theme === "night");
     }, [theme]);
 
-    const handleCloneTrip = (iti: Itinerary) => {
-        triggerConfetti();
-        const cloned: Itinerary = {
-            ...iti,
-            id: `cloned-${Date.now()}`,
-            title: `${iti.title} (Bản sao)`,
-            share: false,
-        };
-        setItineraries([cloned, ...itineraries]);
-        notify(`Đã lưu "${iti.title}" vào sổ tay của bạn!`, "📌");
+    const handleCloneTrip = async (iti: Itinerary) => {
+        const toastId = toast.loading("Đang chuẩn bị hành trang...");
+        try {
+            const { data: responseData, response: full_response } = await api.get(`/itineraries/${iti.id}`);
+            if (!full_response.ok) throw new Error(responseData.message || "Lỗi khi lấy dữ liệu lộ trình");
+            const full_iti = responseData.data.data || responseData;
+
+            const {
+                id,
+                created_at,
+                user_id,
+                ...restItinerary
+            } = full_iti;
+            const cleanDays = restItinerary.itinerary_days?.map((day: any) => {
+                const { id, itinerary_id, ...restDay } = day;
+                const cleanLocations = restDay.itinerary_locations?.map((loc: any) => {
+                    const { id, itinerary_day_id, ...restLoc } = loc;
+                    return restLoc;
+                });
+
+                return { ...restDay, itinerary_locations: cleanLocations };
+            });
+            const payload = {
+                ...restItinerary,
+                itinerary_days: cleanDays,
+                title: `Bản sao - ${full_iti.title}`,
+                share: false,
+                user_id: currentUser?.id || "",
+                cloned_from_id: full_iti.id
+            };
+
+            const { data, response } = await api.post(`/itineraries`, payload);
+            if (!response.ok) throw new Error(data.message || "Lỗi khi clone lộ trình");
+
+            toast.success(`Đã lưu "${full_iti.title}" vào sổ tay!`, { id: toastId });
+            triggerConfetti();
+
+        } catch (err: any) {
+            console.error("Lỗi clone:", err);
+            toast.error(err.message || "Có lỗi xảy ra khi clone lộ trình", { id: toastId });
+        }
     };
 
     const personalStats = useMemo(() => {
@@ -146,13 +177,14 @@ export default function JournifyUserDashboard() {
                             setIsAiModalOpen={setIsAiModalOpen}
                         />
                         {/* Lộ trình nổi bật */}
-                        <TrendingItinerary
-                            trendingItineraries={trendingItineraries}
-                            setActiveTripDetail={setActiveTripDetail}
-                            handleCloneTrip={handleCloneTrip}
-                            setActiveNav={setActiveNav}
-                        />
-
+                        <div>
+                            <TrendingItinerary
+                                trendingItineraries={trendingItineraries}
+                                setActiveTripDetail={setActiveTripDetail}
+                                handleCloneTrip={handleCloneTrip}
+                                setActiveNav={setActiveNav}
+                            />
+                        </div>
                         {/* Khám phá theo vùng miền */}
                         <RegionExplore />
                         {/* Bài viết & Mẹo du lịch */}
