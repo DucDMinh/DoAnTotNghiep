@@ -56,6 +56,19 @@ class ItineraryController extends BaseController {
             ctx.body = { success: false, message: `Lỗi hệ thống khi lấy danh sách lộ trình`, error_detail: error.message };
         }
     }
+    getItinerariesByMe = async (ctx) => {
+        try {
+            const userId = ctx.state.user.id;
+            const { data, error } = await this.repository.getItinerariesByUserId(userId);
+            if (error) throw error;
+            ctx.status = 200;
+            ctx.body = { success: true, data: data, userId: userId };
+        } catch (error) {
+            console.error("Lỗi khi lấy lộ trình của người dùng:", error);
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống khi lấy danh sách lộ trình của người dùng`, error_detail: error.message };
+        }
+    }
 }
 
 const itineraryController = new ItineraryController();
@@ -65,3 +78,4 @@ export const getItineraryById = itineraryController.getById;
 export const createItinerary = itineraryController.create;
 export const updateItinerary = itineraryController.update;
 export const deleteItinerary = itineraryController.delete;
+export const getItinerariesByMe = itineraryController.getItinerariesByMe;

@@ -89,6 +89,46 @@ class ItineraryRepository extends BaseRepository {
         const { data, error } = await supabase.rpc('get_trending_itineraries_weekly');
         return { data, error };
     }
+    getItinerariesByUserId = async (userId) => {
+        const { data, error } = await supabase
+            .from('itineraries')
+            .select(`
+    *, 
+    itinerary_days (
+        id, 
+        day_number, 
+        title,
+        itinerary_locations (
+            id, 
+            location_id,      
+            location_name,    
+            lat,              
+            lng,              
+            sequence_order, 
+            start_time, 
+            end_time, 
+            cost, 
+            activity_note,
+            locations (
+                id, 
+                name, 
+                img, 
+                difficulty_level
+            )
+        )
+    ), 
+    itinerary_provinces (
+        province_id,
+        provinces (
+            id,
+            name,
+            image_url
+        )
+    )
+`)
+            .eq('user_id', userId);
+        return { data, error };
+    }
 }
 
 export const itineraryRepo = new ItineraryRepository();
