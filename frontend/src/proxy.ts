@@ -6,11 +6,9 @@ async function verifyAuthToken(token: string | undefined): Promise<{ valid: bool
     if (!token) {
         return { valid: false, reason: 'MISSING_TOKEN' };
     }
-
     try {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback_secret_for_dev');
         const { payload } = await jwtVerify(token, secret);
-
         return { valid: true, decoded: payload };
     } catch (error: any) {
         if (error.code === 'ERR_JWT_EXPIRED') {
@@ -28,19 +26,24 @@ export async function proxy(request: NextRequest) {
     const hostname = hostHeader.split(':')[0];
 
     const token = request.cookies.get('accessToken')?.value;
-    const { valid: isTokenAlive, decoded } = await verifyAuthToken(token);
+    const { valid: isTokenAlive, decoded, reason } = await verifyAuthToken(token);
+    const errorType = reason === 'EXPIRED' ? 'TOKEN_EXPIRED' : 'unauthorized';
+
     if (hostname === 'admin.localhost') {
         if (url.pathname.startsWith('/auth/signin')) {
             const targetPath = `/admin${url.pathname}`;
             return NextResponse.rewrite(new URL(targetPath, request.url));
         }
+
         if (!isTokenAlive) {
             const loginUrl = new URL('/auth/signin', request.url);
-            loginUrl.searchParams.set('error_message', 'TOKEN_EXPIRED');
             const response = NextResponse.redirect(loginUrl);
             response.cookies.delete('accessToken');
+            response.cookies.set('toast_error', errorType, { path: '/', maxAge: 10 });
+            response.cookies.set('clear_storage', 'true', { path: '/', maxAge: 10 });
             return response;
         }
+
         if (decoded?.role !== 'ADMIN') {
             return NextResponse.redirect(new URL('http://localhost:3000/'));
         }
@@ -52,28 +55,38 @@ export async function proxy(request: NextRequest) {
     if (url.pathname.startsWith('/admin')) {
         return NextResponse.redirect(new URL('/', request.url));
     }
+
     const protectedUserRoutes = ['/MyItinerary', '/settings'];
     const isAccessingProtectedRoute = protectedUserRoutes.some(route =>
         url.pathname.startsWith(route)
     );
-    if (isAccessingProtectedRoute && !isTokenAlive) {
-        const userLoginUrl = new URL('/auth/signin', request.url);
-        const response = NextResponse.redirect(userLoginUrl);
 
-        response.cookies.delete('accessToken');
-
-        response.cookies.set('toast_error', 'unauthorized', {
-            path: '/',
-            maxAge: 10,
-        });
-
-        return response;
+    if (!isTokenAlive) {
+        if (reason === 'MISSING_TOKEN' && !isAccessingProtectedRoute) {
+        }
+        else {
+            let response;
+            if (isAccessingProtectedRoute) {
+                response = NextResponse.redirect(new URL('/auth/signin', request.url));
+            } else {
+                response = NextResponse.next();
+            }
+            response.cookies.delete('accessToken');
+            response.cookies.set('clear_storage', 'true', { path: '/', maxAge: 10 });
+            if (reason === 'EXPIRED') {
+                response.cookies.set('toast_error', 'TOKEN_EXPIRED', { path: '/', maxAge: 10 });
+            } else if (isAccessingProtectedRoute) {
+                response.cookies.set('toast_error', 'unauthorized', { path: '/', maxAge: 10 });
+            }
+            return response;
+        }
     }
 
     if (!url.pathname.startsWith('/user')) {
         const targetPath = url.pathname === '/' ? '/user' : `/user${url.pathname}`;
         return NextResponse.rewrite(new URL(targetPath, request.url));
     }
+
     return NextResponse.next();
 }
 

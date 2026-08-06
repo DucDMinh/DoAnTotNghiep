@@ -78,7 +78,39 @@ export default function JournifyUserDashboard() {
 
     const notify = useNotify();
     const { user: currentUser } = useAuth();
+    useEffect(() => {
+        let currentToastId: string | undefined;
 
+        const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            return null;
+        };
+
+        const errorCookie = getCookie('toast_error');
+        const clearStorageCookie = getCookie('clear_storage');
+
+        if (clearStorageCookie || errorCookie) {
+            localStorage.removeItem('userData');
+            document.cookie = "clear_storage=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+
+        if (errorCookie) {
+            currentToastId = toast.error(
+                errorCookie === "TOKEN_EXPIRED"
+                    ? "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!"
+                    : "Vui lòng đăng nhập để tiếp tục."
+            );
+            document.cookie = "toast_error=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+
+        return () => {
+            if (currentToastId) {
+                toast.remove(currentToastId);
+            }
+        };
+    }, []);
     const fetchItineraries = async () => {
         try {
             const { data, response } = await api.get('/itineraries?trending=weekly');
@@ -91,7 +123,6 @@ export default function JournifyUserDashboard() {
             notify(error.message || "Không thể tải dữ liệu", "⚠️");
         }
     };
-
     const fetchFavLocations = async () => {
         try {
             const { data, response } = await api.get('/locations?trending=true&limit=4');
@@ -118,7 +149,6 @@ export default function JournifyUserDashboard() {
             const { data: responseData, response: full_response } = await api.get(`/itineraries/${iti.id}`);
             if (!full_response.ok) throw new Error(responseData.message || "Lỗi khi lấy dữ liệu lộ trình");
             const full_iti = responseData.data.data || responseData;
-
             const {
                 id,
                 created_at,
@@ -131,7 +161,6 @@ export default function JournifyUserDashboard() {
                     const { id, itinerary_day_id, ...restLoc } = loc;
                     return restLoc;
                 });
-
                 return { ...restDay, itinerary_locations: cleanLocations };
             });
             const payload = {
@@ -142,19 +171,28 @@ export default function JournifyUserDashboard() {
                 user_id: currentUser?.id || "",
                 cloned_from_id: full_iti.id
             };
-
             const { data, response } = await api.post(`/itineraries`, payload);
             if (!response.ok) throw new Error(data.message || "Lỗi khi clone lộ trình");
-
             toast.success(`Đã lưu "${full_iti.title}" vào sổ tay!`, { id: toastId });
             triggerConfetti();
-
         } catch (err: any) {
             console.error("Lỗi clone:", err);
             toast.error(err.message || "Có lỗi xảy ra khi clone lộ trình", { id: toastId });
         }
     };
 
+    const handleViewDetailItinerary = async (id: string) => {
+        const toastId = toast.loading("...");
+        try {
+            const { data, response } = await api.get(`/itineraries/${id}`)
+            if (!response.ok) throw new Error(data.message || "Lỗi khi lấy dữ liệu lộ trình");
+            setActiveTripDetail(data.data.data)
+            toast.success("ok", { id: toastId })
+        } catch (err: any) {
+            console.error("Lỗi clone:", err);
+            toast.error(err.message || "Có lỗi xảy ra khi clone lộ trình", { id: toastId });
+        }
+    }
     const personalStats = useMemo(() => {
         return {
             totalTrips: itineraries.length,
@@ -180,6 +218,7 @@ export default function JournifyUserDashboard() {
                             <TrendingItinerary
                                 trendingItineraries={trendingItineraries}
                                 setActiveTripDetail={setActiveTripDetail}
+                                handleViewDetailItinerary={handleViewDetailItinerary}
                                 handleCloneTrip={handleCloneTrip}
                                 setActiveNav={setActiveNav}
                             />

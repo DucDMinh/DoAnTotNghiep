@@ -7,6 +7,7 @@ interface TrendingItineraryProps {
     setActiveTripDetail: (trip: Itinerary) => void;
     handleCloneTrip: (trip: Itinerary) => void;
     setActiveNav: (nav: string) => void;
+    handleViewDetailItinerary: (id: string) => void;
 }
 
 function TrendingCard({ trip, rank, onOpen, onClone }: { trip: Itinerary; rank: number; onOpen: () => void; onClone: () => void }) {
@@ -29,7 +30,7 @@ function TrendingCard({ trip, rank, onOpen, onClone }: { trip: Itinerary; rank: 
     );
 }
 
-export const TrendingItinerary = ({ trendingItineraries, setActiveTripDetail, handleCloneTrip, setActiveNav }: TrendingItineraryProps) => {
+export const TrendingItinerary = ({ trendingItineraries, handleCloneTrip, setActiveNav, handleViewDetailItinerary }: TrendingItineraryProps) => {
     return (
         <section className="w-full min-w-0"> {/* 🌟 Khóa chiều rộng, chống vỡ layout */}
             <div className="flex items-center justify-between mb-6">
@@ -63,7 +64,7 @@ export const TrendingItinerary = ({ trendingItineraries, setActiveTripDetail, ha
                         <TrendingCard
                             trip={trip}
                             rank={idx + 1}
-                            onOpen={() => setActiveTripDetail(trip)}
+                            onOpen={() => handleViewDetailItinerary(trip.id)}
                             onClone={() => handleCloneTrip(trip)}
                         />
                     </div>

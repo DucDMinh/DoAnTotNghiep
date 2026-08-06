@@ -44,8 +44,8 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
 
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-4xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col md:flex-row max-h-[85vh]">
-                <div className="md:w-5/12 bg-[var(--bg-bento)] p-6 sm:p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[var(--border-color)] relative">
-                    <div>
+                <div className="md:w-5/12 bg-[var(--bg-bento)] p-6 sm:p-8 flex flex-col border-b md:border-b-0 md:border-r border-[var(--border-color)] relative overflow-hidden">
+                    <div className="flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-color)] hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full pb-2">
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] font-display bg-[var(--bg-card)] px-3 py-1 rounded-full border border-[var(--border-color)] shadow-sm">
                                 {itinerary.days || 1} Ngày Trải Nghiệm
@@ -54,29 +54,39 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden shadow-md mb-6 border border-[var(--border-color)]">
+
+                        <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden shadow-md mb-6 border border-[var(--border-color)] shrink-0">
                             <img src={itinerary.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={itinerary.title} className="w-full h-full object-cover" />
                             <WashiTape color="var(--washi-coral)" className="top-3 left-3 w-24 -rotate-6" />
                         </div>
-                        <h2 className="font-display text-2xl font-bold leading-snug">{itinerary.title}</h2>
+                        <h2
+                            className="font-display text-2xl font-bold leading-snug line-clamp-3"
+                            title={itinerary.title}
+                        >
+                            {itinerary.title}
+                        </h2>
+
                         <p className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-1.5 mt-3">
-                            <MapPin className="w-4 h-4 text-[var(--accent-primary)]" />
-                            <span>{destination}</span>
+                            <MapPin className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
+                            <span className="line-clamp-2">{destination}</span>
                         </p>
+
                         <div className="mt-6 space-y-3 pt-6 border-t border-[var(--border-color)] text-sm font-medium">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[var(--text-muted)]">Ngân sách dự kiến:</span>
-                                <span className="text-[var(--accent-gold)] font-bold bg-[var(--accent-gold)]/10 px-2.5 py-1 rounded-lg">
+                            <div className="flex justify-between items-center gap-4">
+                                <span className="text-[var(--text-muted)] shrink-0">Ngân sách dự kiến:</span>
+                                <span className="text-[var(--accent-gold)] font-bold bg-[var(--accent-gold)]/10 px-2.5 py-1 rounded-lg text-right">
                                     {itinerary.estimated_cost ? itinerary.estimated_cost.toLocaleString('vi-VN') + " đ" : "Tự túc"}
                                 </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[var(--text-muted)]">Tác giả lộ trình:</span>
-                                <span className="font-semibold">{itinerary.user_id?.name || currentUser?.name || "Ẩn danh"}</span>
+                            <div className="flex justify-between items-center gap-4">
+                                <span className="text-[var(--text-muted)] shrink-0">Tác giả lộ trình:</span>
+                                <span className="font-semibold text-right truncate">
+                                    {itinerary.user_id?.name || currentUser?.name || "Ẩn danh"}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div className="mt-8 pt-4 flex gap-3">
+                    <div className="mt-4 pt-4 flex gap-3 shrink-0 bg-[var(--bg-bento)]">
                         <button onClick={() => { onClone(); onClose(); }} className="flex-1 py-3.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-sm shadow-[0_4px_12px_rgba(var(--accent-primary-rgb),0.3)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                             <BookmarkPlus className="w-4 h-4" /> Lưu vào sổ tay
                         </button>
