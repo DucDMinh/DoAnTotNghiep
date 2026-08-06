@@ -4,13 +4,13 @@ import RoutingMachine from "./RoutingMachine";
 import { Itinerary_days } from "@/interface";
 
 interface RouteMapViewerProps {
-    days: Itinerary_days[];
+    days: Itinerary_days[] | null;
 }
 
 export default function RouteMapViewer({ days }: RouteMapViewerProps) {
     const points: { lat: number; lng: number; name: string }[] = [];
 
-    days.forEach((day) => {
+    days?.forEach((day) => {
         day.itinerary_locations?.forEach((loc) => {
             if (loc.lat && loc.lng && loc.lat !== 0) {
                 points.push({

@@ -28,6 +28,7 @@ import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
 import { RegionExplore } from "@/components/user/HomePage/RegionExplore";
 import { WishlistPreview } from "@/components/user/HomePage/WishlistPreview";
 import { useNotify } from "@/app/user/(dashboard)/layout";
+import { useRouter } from "next/navigation";
 
 interface BlogTip {
     title: string;
@@ -75,7 +76,7 @@ export default function JournifyUserDashboard() {
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isCreatingTrip, setIsCreatingTrip] = useState(false);
-
+    const router = useRouter();
     const notify = useNotify();
     const { user: currentUser } = useAuth();
     useEffect(() => {
@@ -294,7 +295,7 @@ export default function JournifyUserDashboard() {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={() => setActiveNav("trips")}
+                                            onClick={() => router.push('/MyItinerary')}
                                             className="mt-6 w-full py-2.5 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold hover:bg-[var(--accent-primary)] hover:text-white transition"
                                         >
                                             Quản lý lộ trình

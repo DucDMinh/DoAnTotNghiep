@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { Itinerary } from "@/interface";
 import { BookmarkPlus, ChevronRight, Compass, TrendingUp } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TrendingItineraryProps {
     trendingItineraries: Itinerary[];
@@ -30,7 +31,8 @@ function TrendingCard({ trip, rank, onOpen, onClone }: { trip: Itinerary; rank: 
     );
 }
 
-export const TrendingItinerary = ({ trendingItineraries, handleCloneTrip, setActiveNav, handleViewDetailItinerary }: TrendingItineraryProps) => {
+export const TrendingItinerary = ({ trendingItineraries, handleCloneTrip, handleViewDetailItinerary }: TrendingItineraryProps) => {
+    const router = useRouter();
     return (
         <section className="w-full min-w-0"> {/* 🌟 Khóa chiều rộng, chống vỡ layout */}
             <div className="flex items-center justify-between mb-6">
@@ -41,7 +43,7 @@ export const TrendingItinerary = ({ trendingItineraries, handleCloneTrip, setAct
                     <p className="text-sm text-[var(--text-muted)] mt-1">Được cộng đồng yêu thích nhất tuần này</p>
                 </div>
                 <button
-                    onClick={() => setActiveNav("trips")}
+                    onClick={() => router.push('/Itineraries')}
                     className="text-sm font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1"
                 >
                     Xem tất cả <ChevronRight className="w-4 h-4" />
