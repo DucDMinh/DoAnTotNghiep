@@ -72,8 +72,13 @@ export async function login(ctx) {
 
     try {
         const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+        if (error || !user) {
+            ctx.status = 401;
+            ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
+            return;
+        }
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
-        if (error || !user || !isValidPassword) {
+        if (!isValidPassword) {
             ctx.status = 401;
             ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
             return;

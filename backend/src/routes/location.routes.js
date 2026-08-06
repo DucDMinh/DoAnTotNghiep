@@ -7,6 +7,7 @@ const router = new Router({ prefix: '/locations' });
 const upload = multer();
 
 router.get('/', locationController.getAllLocations);
+router.get('/:id', locationController.getLocationById);
 router.post('/', verifyToken, requireAdmin, upload.single('image'), locationController.createLocation);
 router.put('/:id', verifyToken, requireAdmin, upload.single('image'), locationController.updateLocation);
 router.delete('/:id', verifyToken, requireAdmin, locationController.deleteLocation);

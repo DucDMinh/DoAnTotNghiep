@@ -15,6 +15,7 @@ export interface Location {
     difficulty_level?: string;
     rating?: number;
     created_at?: string;
+    saved_count: number | 0
 }
 export interface AddLocationModalProps {
     setIsAddModalOpen: (isOpen: boolean) => void;

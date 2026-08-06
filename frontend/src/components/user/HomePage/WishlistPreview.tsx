@@ -1,7 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 import { useNotify } from "@/app/user/(dashboard)/layout";
+import LocationDetailModal from "@/components/modals/user/LocationDetailModal";
+import { api } from "@/lib/apiClient";
+import { AnimatePresence } from "framer-motion";
 import { ChevronRight, Heart, MapPin, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 interface WishlistPreviewProps {
     wishlist: any[];
@@ -46,7 +51,17 @@ function StarRating({ rating, maxStars = 5, size = "w-5 h-5" }: StarRatingProps)
 }
 
 export const WishlistPreview = ({ wishlist, setIsAiModalOpen }: WishlistPreviewProps) => {
+    const [selectedLocation, setSelectedLocation] = useState<any | null>(null)
     const notify = useNotify();
+    const fetchDetailLocation = async (id: string) => {
+        try {
+            const { data, response } = await api.get(`/locations/${id}`)
+            if (!response.ok) throw new Error(data.message || "Lỗi khi lấy dữ liệu lộ trình");
+            setSelectedLocation(data.data)
+        } catch (error: any) {
+            notify(error.message || "Không thể tải dữ liệu", "⚠️");
+        }
+    }
     return (
         <>
             <div className="lg:col-span-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
@@ -65,7 +80,7 @@ export const WishlistPreview = ({ wishlist, setIsAiModalOpen }: WishlistPreviewP
                         {wishlist.map((item) => (
                             <div
                                 key={item.id}
-                                onClick={() => notify(`Khám phá ${item.name}`, "🗺️")}
+                                onClick={() => fetchDetailLocation(item.id)}
                                 className="flex gap-3 p-2 rounded-xl hover:bg-[var(--bg-paper)] transition cursor-pointer"
                             >
                                 <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
@@ -98,6 +113,16 @@ export const WishlistPreview = ({ wishlist, setIsAiModalOpen }: WishlistPreviewP
                     <Sparkles className="w-4 h-4" /> Gợi ý điểm đến bằng AI
                 </button>
             </div>
+            <AnimatePresence>
+                {selectedLocation && (
+                    <LocationDetailModal
+                        location={selectedLocation}
+                        onClose={() => setSelectedLocation(null)}
+                        onSave={() => {
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </>
     )
 }
