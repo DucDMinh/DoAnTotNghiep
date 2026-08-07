@@ -24,10 +24,10 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { UserBanner } from "@/components/user/HomePage/UserBanner";
 import { TrendingItinerary } from "@/components/user/HomePage/TrendingItinerary";
-import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
+import { TripDetailModal2 } from "@/components/modals/user/TripDetailModal2";
 import { RegionExplore } from "@/components/user/HomePage/RegionExplore";
 import { WishlistPreview } from "@/components/user/HomePage/WishlistPreview";
-import { useNotify } from "@/app/user/(dashboard)/layout";
+import { useDashboard } from "@/app/user/(dashboard)/layout";
 import { useRouter } from "next/navigation";
 
 interface BlogTip {
@@ -77,7 +77,7 @@ export default function JournifyUserDashboard() {
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isCreatingTrip, setIsCreatingTrip] = useState(false);
     const router = useRouter();
-    const notify = useNotify();
+    const { notify } = useDashboard();
     const { user: currentUser } = useAuth();
     useEffect(() => {
         let currentToastId: string | undefined;
@@ -341,7 +341,7 @@ export default function JournifyUserDashboard() {
             {/* Modals (giữ nguyên) */}
             <AnimatePresence>
                 {activeTripDetail && (
-                    <TripDetailModal currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
+                    <TripDetailModal2 currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
                 )}
             </AnimatePresence>
             <AnimatePresence>

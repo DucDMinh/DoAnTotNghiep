@@ -11,17 +11,22 @@ import { useAuth } from "@/hooks/auth/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { Itinerary } from "@/interface";
 import { CompassIcon, Send, Sparkles, X } from "lucide-react";
+import { CreateTripModal } from "@/components/modals/user/CreateTripModal";
 
-type NotifyFunction = (msg: string, icon?: string) => void;
+// 1. Định nghĩa kiểu dữ liệu gộp chung cho cả notify và setIsCreatingTrip
+type DashboardContextType = {
+    notify: (msg: string, icon?: string) => void;
+    setIsCreatingTrip: React.Dispatch<React.SetStateAction<boolean>>; // Khai báo kiểu cho hàm set state
+};
 
-// 2. Khởi tạo Context
-const NotifyContext = createContext<NotifyFunction | undefined>(undefined);
+// 2. Khởi tạo Context mới (thay thế cho NotifyContext cũ)
+const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
-// 3. Tạo Custom Hook để các file con gọi ra xài cho tiện
-export const useNotify = () => {
-    const context = useContext(NotifyContext);
+// 3. Tạo Custom Hook mới
+export const useDashboard = () => {
+    const context = useContext(DashboardContext);
     if (context === undefined) {
-        throw new Error("useNotify phải được sử dụng bên trong UserDashboardLayout");
+        throw new Error("useDashboard phải được sử dụng bên trong UserDashboardLayout");
     }
     return context;
 };
@@ -70,7 +75,7 @@ export default function UserDashboardLayout({
     };
 
     return (
-        <NotifyContext.Provider value={notify}>
+        <DashboardContext.Provider value={{ notify, setIsCreatingTrip }}>
             <div className="min-h-screen paper-grid selection:bg-[var(--accent-primary)] selection:text-white">
                 <GlobalStyles />
                 <AppHeader
@@ -97,9 +102,17 @@ export default function UserDashboardLayout({
                             }}
                         />
                     )}
+                </AnimatePresence><AnimatePresence>
+                    {isCreatingTrip && (
+                        <CreateTripModal
+                            onClose={() => setIsCreatingTrip(false)}
+                            provinces={[]}
+                            onSubmit={() => { }}
+                        />
+                    )}
                 </AnimatePresence>
             </div>
-        </NotifyContext.Provider>
+        </DashboardContext.Provider>
     );
 }
 function AiPlannerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (trip: Itinerary) => void }) {

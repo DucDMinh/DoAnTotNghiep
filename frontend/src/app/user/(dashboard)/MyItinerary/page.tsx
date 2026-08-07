@@ -16,12 +16,14 @@ import { Itinerary } from "@/interface";
 import { MyItineraryCard } from "@/components/user/MyItinerary/MyItineraryCard";
 import { api } from "@/lib/apiClient";
 import { useAuth } from "@/hooks/auth/AuthContext";
-import { TripDetailModal } from "@/components/modals/user/TripDetailModal";
+import { TripDetailModal1 } from "@/components/modals/user/TripDetailModal1";
+import { useDashboard } from "@/app/user/(dashboard)/layout";
 
 export default function MyItineraryPage() {
     const [itineraries, setItineraries] = useState<Itinerary[]>([]);
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "past">("all");
+    const { setIsCreatingTrip, notify } = useDashboard();
     const filteredItineraries = useMemo(() => {
         const now = new Date();
         return itineraries.filter((iti) => {
@@ -88,7 +90,7 @@ export default function MyItineraryPage() {
                     </p>
                 </div>
 
-                <button onClick={() => toast.success("Mở màn hình tạo mới")} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-gold)] text-white text-sm font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all shrink-0">
+                <button onClick={() => setIsCreatingTrip(true)} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-gold)] text-white text-sm font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all shrink-0">
                     <Plus className="w-4 h-4" />
                     Bắt đầu hành trình mới
                 </button>
@@ -145,7 +147,7 @@ export default function MyItineraryPage() {
             )}
             <AnimatePresence>
                 {activeTripDetail && (
-                    <TripDetailModal currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => { }} />
+                    <TripDetailModal1 itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onSave={() => notify("okokok", "!!!")} />
                 )}
             </AnimatePresence>
         </div>

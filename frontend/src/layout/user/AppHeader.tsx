@@ -133,7 +133,7 @@ export const AppHeader = ({
                                             </div>
                                             <div className="py-1">
                                                 <NextLink
-                                                    href="/profile"
+                                                    href="/Profile"
                                                     onClick={() => setIsProfileOpen(false)}
                                                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--bg-paper)] transition-colors"
                                                 >

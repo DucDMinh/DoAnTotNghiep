@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useNotify } from "@/app/user/(dashboard)/layout";
+import { useDashboard } from "@/app/user/(dashboard)/layout";
 import LocationDetailModal from "@/components/modals/user/LocationDetailModal";
 import { api } from "@/lib/apiClient";
 import { AnimatePresence } from "framer-motion";
@@ -52,7 +52,7 @@ function StarRating({ rating, maxStars = 5, size = "w-5 h-5" }: StarRatingProps)
 
 export const WishlistPreview = ({ wishlist, setIsAiModalOpen }: WishlistPreviewProps) => {
     const [selectedLocation, setSelectedLocation] = useState<any | null>(null)
-    const notify = useNotify();
+    const { notify } = useDashboard();
     const fetchDetailLocation = async (id: string) => {
         try {
             const { data, response } = await api.get(`/locations/${id}`)

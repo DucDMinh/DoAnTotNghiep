@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
-import { Itinerary, Itinerary_days, Itinerary_locations, User } from "@/interface";
-import { BookmarkPlus, CheckCircle2, Circle, Compass, Luggage, MapPin, Share2, X, Navigation, Map } from "lucide-react";
+import { Itinerary, Itinerary_days, Itinerary_locations } from "@/interface";
+import { CheckCircle2, Circle, Compass, Luggage, MapPin, X, Navigation, Map, Save, Image as ImageIcon, Calendar, FileText, Tag, DollarSign, Globe, Lock } from "lucide-react";
 import { useState } from "react";
 import { motion, Variants } from "framer-motion";
-import { useNotify } from "@/app/user/(dashboard)/layout";
 import dynamic from "next/dynamic";
 
 const RouteMapViewer = dynamic(() => import("@/components/admin/itineraries/builder/RouteMapViewer"), {
@@ -17,9 +16,45 @@ const RouteMapViewer = dynamic(() => import("@/components/admin/itineraries/buil
     ),
 });
 
-export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { itinerary: Itinerary; onClose: () => void; onClone: () => void, currentUser: User | null }) => {
+export const TripDetailModal1 = ({
+    itinerary,
+    onClose,
+    onSave
+}: {
+    itinerary: Itinerary;
+    onClose: () => void;
+    onSave: () => void
+}) => {
     const [activeTab, setActiveTab] = useState<"itinerary" | "checklist" | "map">("itinerary");
-    const destination = itinerary.itinerary_provinces?.map(ip => ip.provinces?.name).join(" - ") || "Việt Nam";
+
+    // 🌟 STATE QUẢN LÝ FORM DỮ LIỆU
+    const [editForm, setEditForm] = useState({
+        title: itinerary.title || "",
+        summary: itinerary.summary || "",
+        theme: itinerary.theme || "",
+        start_date: itinerary.start_date ? itinerary.start_date.split('T')[0] : "",
+        end_date: itinerary.end_date ? itinerary.end_date.split('T')[0] : "",
+        estimated_cost: itinerary.estimated_cost || 0,
+        image_url: itinerary.image_url || "",
+        share: itinerary.share || false,
+    });
+
+    // 🌟 HÀM TỰ TÍNH TOÁN SỐ NGÀY/ĐÊM TỪ NGÀY ĐI VÀ VỀ
+    const getDuration = () => {
+        if (!editForm.start_date || !editForm.end_date) return { days: itinerary.days || 1, nights: itinerary.nights || 0 };
+        const d1 = new Date(editForm.start_date);
+        const d2 = new Date(editForm.end_date);
+        const diffTime = d2.getTime() - d1.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) return { days: 1, nights: 0 };
+        return { days: diffDays + 1, nights: diffDays };
+    };
+    const duration = getDuration();
+
+    const handleSave = () => {
+        onSave();
+        onClose();
+    };
 
     const defaultChecklist = [
         { item: "Căn cước công dân / Hộ chiếu", checked: true },
@@ -27,85 +62,159 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
         { item: "Sạc dự phòng & dây cáp", checked: false },
         { item: "Đồ dùng cá nhân", checked: false }
     ];
-
-    const notify = useNotify();
     const [checklist, setChecklist] = useState(defaultChecklist);
-
     const toggleCheck = (idx: number) => {
         setChecklist((prev) => prev.map((item, i) => i === idx ? { ...item, checked: !item.checked } : item));
     };
+
     const containerVariants: Variants = {
         hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.15 }
-        }
+        show: { opacity: 1, transition: { staggerChildren: 0.15 } }
     };
     const itemVariants: Variants = {
         hidden: { opacity: 0, x: -20 },
-        show: {
-            opacity: 1,
-            x: 0,
-            transition: { type: "spring", stiffness: 300, damping: 24 }
-        }
+        show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
 
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-5xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col md:flex-row max-h-[85vh]">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-6xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] shadow-2xl overflow-hidden z-10 flex flex-col md:flex-row max-h-[90vh]">
+
+                {/* 🌟 CỘT TRÁI: FORM CHỈNH SỬA THÔNG TIN */}
                 <div className="md:w-5/12 bg-[var(--bg-bento)] p-6 sm:p-8 flex flex-col border-b md:border-b-0 md:border-r border-[var(--border-color)] relative overflow-hidden">
-                    <div className="flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-color)] hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full pb-2">
+                    <div className="flex-1 overflow-y-auto pr-3 -mr-3 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-[var(--border-color)] hover:[&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full pb-2">
+
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-primary)] font-display bg-[var(--bg-card)] px-3 py-1 rounded-full border border-[var(--border-color)] shadow-sm">
-                                {itinerary.days || 1} Ngày Trải Nghiệm
+                                {duration.days} Ngày {duration.nights} Đêm
                             </span>
                             <button onClick={onClose} className="md:hidden p-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
 
-                        <div className="relative h-48 sm:h-56 rounded-2xl overflow-hidden shadow-md mb-6 border border-[var(--border-color)] shrink-0">
-                            <img src={itinerary.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={itinerary.title} className="w-full h-full object-cover" />
+                        {/* Image Preview */}
+                        <div className="relative h-40 sm:h-48 rounded-2xl overflow-hidden shadow-md mb-6 border border-[var(--border-color)] shrink-0 group">
+                            <img src={editForm.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={editForm.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-white text-xs font-bold flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Sửa link ảnh ở Form dưới</span>
+                            </div>
                             <WashiTape color="var(--washi-coral)" className="top-3 left-3 w-24 -rotate-6" />
                         </div>
-                        <h2
-                            className="font-display text-2xl font-bold leading-snug line-clamp-3"
-                            title={itinerary.title}
-                        >
-                            {itinerary.title}
-                        </h2>
 
-                        <p className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-1.5 mt-3">
-                            <MapPin className="w-4 h-4 text-[var(--accent-primary)] shrink-0" />
-                            <span className="line-clamp-2">{destination}</span>
-                        </p>
-
-                        <div className="mt-6 space-y-3 pt-6 border-t border-[var(--border-color)] text-sm font-medium">
-                            <div className="flex justify-between items-center gap-4">
-                                <span className="text-[var(--text-muted)] shrink-0">Ngân sách dự kiến:</span>
-                                <span className="text-[var(--accent-gold)] font-bold bg-[var(--accent-gold)]/10 px-2.5 py-1 rounded-lg text-right">
-                                    {itinerary.estimated_cost ? itinerary.estimated_cost.toLocaleString('vi-VN') + " đ" : "Tự túc"}
-                                </span>
+                        {/* Các Field Nhập Liệu */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Tên lộ trình</label>
+                                <input
+                                    type="text"
+                                    value={editForm.title}
+                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    placeholder="Ví dụ: Khám phá Đà Lạt 3N2Đ"
+                                />
                             </div>
-                            <div className="flex justify-between items-center gap-4">
-                                <span className="text-[var(--text-muted)] shrink-0">Tác giả lộ trình:</span>
-                                <span className="font-semibold text-right truncate">
-                                    {itinerary.user_id?.name || currentUser?.name || "Ẩn danh"}
-                                </span>
+
+                            <div>
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Tóm tắt chuyến đi</label>
+                                <textarea
+                                    value={editForm.summary}
+                                    onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all min-h-[80px] resize-none"
+                                    placeholder="Mô tả ngắn gọn về chuyến đi của bạn..."
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Ngày đi</label>
+                                    <input
+                                        type="date"
+                                        value={editForm.start_date}
+                                        onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Ngày về</label>
+                                    <input
+                                        type="date"
+                                        value={editForm.end_date}
+                                        onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" /> Chủ đề</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.theme}
+                                        onChange={(e) => setEditForm({ ...editForm, theme: e.target.value })}
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                        placeholder="Vd: Ẩm thực"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Chi phí dự kiến</label>
+                                    <input
+                                        type="number"
+                                        value={editForm.estimated_cost}
+                                        onChange={(e) => setEditForm({ ...editForm, estimated_cost: Number(e.target.value) })}
+                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                        placeholder="VND"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" /> URL Ảnh bìa</label>
+                                <input
+                                    type="text"
+                                    value={editForm.image_url}
+                                    onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })}
+                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    placeholder="https://..."
+                                />
+                            </div>
+
+                            {/* Share Toggle */}
+                            <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl">
+                                <div>
+                                    <p className="font-bold text-sm flex items-center gap-1.5">
+                                        {editForm.share ? <Globe className="w-4 h-4 text-emerald-500" /> : <Lock className="w-4 h-4 text-rose-500" />}
+                                        Chế độ hiển thị
+                                    </p>
+                                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                                        {editForm.share ? "Công khai - Mọi người có thể xem" : "Riêng tư - Chỉ mình bạn có thể xem"}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setEditForm({ ...editForm, share: !editForm.share })}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${editForm.share ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editForm.share ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div className="mt-4 pt-4 flex gap-3 shrink-0 bg-[var(--bg-bento)]">
-                        <button onClick={() => { onClone(); onClose(); }} className="flex-1 py-3.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-sm shadow-[0_4px_12px_rgba(var(--accent-primary-rgb),0.3)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                            <BookmarkPlus className="w-4 h-4" /> Lưu vào sổ tay
+
+                    {/* Action Buttons */}
+                    <div className="mt-4 pt-4 flex gap-3 shrink-0 bg-[var(--bg-bento)] border-t border-[var(--border-color)]">
+                        <button onClick={onClose} className="flex-1 py-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] font-bold text-sm hover:text-[var(--text-main)] transition-colors shadow-sm">
+                            Hủy
                         </button>
-                        <button onClick={() => notify("Đã sao chép liên kết chia sẻ lộ trình!", "🔗")} className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] transition-colors shadow-sm" title="Chia sẻ">
-                            <Share2 className="w-4 h-4" />
+                        <button onClick={handleSave} className="flex-1 py-3.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-sm shadow-[0_4px_12px_rgba(var(--accent-primary-rgb),0.3)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                            <Save className="w-4 h-4" /> Cập nhật
                         </button>
                     </div>
                 </div>
+
+                {/* 🌟 CỘT PHẢI: PREVIEW (Xem trước Lộ trình) */}
                 <div className="flex-1 flex flex-col overflow-hidden bg-[var(--bg-paper)]">
                     <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[var(--border-color)] bg-[var(--bg-card)] z-10 shadow-sm">
                         <div className="flex gap-2">
@@ -127,7 +236,7 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-8 opacity-75 hover:opacity-100 transition-opacity">
                         {activeTab === "itinerary" && (
                             itinerary.itinerary_days && itinerary.itinerary_days.length > 0 ? (
                                 <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-10">
@@ -169,7 +278,6 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
                                                                     )}
                                                                 </div>
                                                             </div>
-
                                                         </motion.div>
                                                     ))
                                                 ) : (
@@ -186,8 +294,8 @@ export const TripDetailModal = ({ itinerary, onClose, onClone, currentUser }: { 
                                     <div className="w-16 h-16 rounded-full bg-[var(--bg-bento)] flex items-center justify-center mb-4">
                                         <Compass className="w-8 h-8 opacity-50 animate-spin-slow text-[var(--accent-primary)]" />
                                     </div>
-                                    <h4 className="font-bold text-lg text-[var(--text-main)] mb-1">Đang xây dựng lộ trình</h4>
-                                    <p className="text-sm">Chi tiết các địa điểm sẽ sớm được cập nhật...</p>
+                                    <h4 className="font-bold text-lg text-[var(--text-main)] mb-1">Chưa có lịch trình</h4>
+                                    <p className="text-sm">Hãy lưu lại để chuyển sang Trình tạo Lộ trình nhé...</p>
                                 </div>
                             )
                         )}
