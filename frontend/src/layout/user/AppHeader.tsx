@@ -9,11 +9,8 @@ import NextLink from "next/link";
 import { useAuth } from "@/hooks/auth/AuthContext";
 
 interface AppHeaderProp {
-    searchQuery: string;
-    setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
     setActiveNav: React.Dispatch<React.SetStateAction<string>>;
     setIsAiModalOpen: React.Dispatch<React.SetStateAction<boolean>>,
-    notify: (msg: string, icon?: string, type?: "default" | "success") => void;
     setIsCreatingTrip: React.Dispatch<React.SetStateAction<boolean>>,
     setTheme: React.Dispatch<React.SetStateAction<"day" | "night">>,
     currentUser: User | null,
