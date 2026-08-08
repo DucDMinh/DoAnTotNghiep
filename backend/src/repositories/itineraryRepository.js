@@ -17,6 +17,19 @@ class ItineraryRepository extends BaseRepository {
 
         return data;
     }
+    update = async (id, payload) => {
+        const { data, error } = await supabase.rpc('update_full_itinerary', {
+            p_id: id,
+            payload: payload
+        });
+
+        if (error) {
+            console.error("Lỗi khi cập nhật Itinerary qua RPC:", error);
+            throw error;
+        }
+
+        return data;
+    }
 
     getById = async (id) => {
         const { data, error } = await supabase

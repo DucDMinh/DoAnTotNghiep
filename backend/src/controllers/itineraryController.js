@@ -35,6 +35,63 @@ class ItineraryController extends BaseController {
             ctx.body = { success: false, message: `Lỗi hệ thống khi tạo ${this.itemName}`, error_detail: error.message };
         }
     }
+    update = async (ctx) => {
+        try {
+            if (!ctx.request.body || Object.keys(ctx.request.body).length === 0) {
+                ctx.status = 400;
+                ctx.body = { success: false, message: "Dữ liệu cập nhật không được để trống" };
+                return;
+            }
+
+            const payload = { ...ctx.request.body };
+            const id = ctx.params.id || payload.id;
+            if (!id) {
+                ctx.status = 400;
+                ctx.body = { success: false, message: "Thiếu ID để cập nhật lộ trình" };
+                return;
+            }
+            delete payload.id;
+            if (Object.keys(payload).length === 0) {
+                ctx.status = 400;
+                ctx.body = { success: false, message: "Không có trường dữ liệu nào được thay đổi" };
+                return;
+            }
+            try {
+                if (payload.itinerary_days && typeof payload.itinerary_days === 'string') {
+                    payload.itinerary_days = JSON.parse(payload.itinerary_days);
+                }
+                if (payload.itinerary_provinces && typeof payload.itinerary_provinces === 'string') {
+                    payload.itinerary_provinces = JSON.parse(payload.itinerary_provinces);
+                }
+            } catch (e) {
+                ctx.status = 400;
+                ctx.body = { success: false, message: "Định dạng JSON của lộ trình không hợp lệ" };
+                return;
+            }
+            if (payload.estimated_cost !== undefined) payload.estimated_cost = Number(payload.estimated_cost);
+            if (payload.nights !== undefined) payload.nights = Number(payload.nights);
+            if (payload.days !== undefined) payload.days = Number(payload.days);
+
+            if (payload.share !== undefined) {
+                payload.share = payload.share === 'true' || payload.share === true;
+            }
+
+            console.log("Payload chuẩn bị update:", JSON.stringify({ id, ...payload }, null, 2));
+            const data = await this.repository.update(id, payload);
+
+            ctx.status = 200;
+            ctx.body = { success: true, message: `Cập nhật ${this.itemName} thành công`, data };
+
+        } catch (error) {
+            console.error("Lỗi cập nhật lộ trình:", error);
+            ctx.status = 500;
+            ctx.body = {
+                success: false,
+                message: `Lỗi hệ thống khi cập nhật ${this.itemName}`,
+                error_detail: error.message
+            };
+        }
+    }
     getAll = async (ctx) => {
         try {
             const { trending, is_public } = ctx.query;

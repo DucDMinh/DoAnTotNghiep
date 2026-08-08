@@ -93,7 +93,7 @@ export const CreateTripModal = ({ onClose }: CreateTripModalProps) => {
             setIsSubmitting(false);
         }
     };
-
+    const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     return (
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -177,12 +177,17 @@ export const CreateTripModal = ({ onClose }: CreateTripModalProps) => {
                                     <Calendar className="w-3.5 h-3.5" /> Ngày đi
                                 </label>
                                 <input
-                                    required
                                     type="date"
-                                    value={formData.start_date}
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={today}
+                                    value={formData?.start_date || ''}
                                     onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                                    className="w-full bg-[var(--bg-paper)] border border-[var(--border-color)] rounded-xl px-3 py-3 text-sm font-medium focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    onClick={(e) => {
+                                        if ('showPicker' in HTMLInputElement.prototype) {
+                                            e.currentTarget.showPicker();
+                                        }
+                                    }}
+
+                                    className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
                                 />
                             </div>
                             <div>
@@ -190,12 +195,17 @@ export const CreateTripModal = ({ onClose }: CreateTripModalProps) => {
                                     <Calendar className="w-3.5 h-3.5" /> Ngày về
                                 </label>
                                 <input
-                                    required
                                     type="date"
-                                    value={formData.end_date}
-                                    min={formData.start_date || new Date().toISOString().split('T')[0]}
+                                    value={formData?.end_date || ''}
                                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                    className="w-full bg-[var(--bg-paper)] border border-[var(--border-color)] rounded-xl px-3 py-3 text-sm font-medium focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all"
+                                    min={formData?.start_date || today}
+                                    onClick={(e) => {
+                                        if ('showPicker' in HTMLInputElement.prototype) {
+                                            e.currentTarget.showPicker();
+                                        }
+                                    }}
+
+                                    className="w-full cursor-pointer rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-3 text-sm font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white [color-scheme:light_dark]"
                                 />
                             </div>
                         </div>

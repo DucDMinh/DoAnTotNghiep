@@ -330,20 +330,24 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
             submitData.append('image_url', finalImageUrl);
         }
         if (selectedProvinces && selectedProvinces.length > 0) {
-            submitData.append('itinerary_provinces', JSON.stringify(selectedProvinces));
+            const mappedProvinces = selectedProvinces.map(prov => ({
+                province_id: prov.id
+            }));
+            submitData.append('itinerary_provinces', JSON.stringify(mappedProvinces));
         }
         if (user?.id) {
             submitData.append('user_id', user.id);
         }
         const toastId = toast.loading("Đang lưu lộ trình...");
         try {
-            console.log("submitData", Object.fromEntries(submitData.entries()));
-            const { response, data } = await api.post("/itineraries", submitData);
-
-            if (!response.ok) {
-                throw new Error(data.message || "Lỗi khi thêm lịch trình");
+            let response, data;
+            if (currentItinerary?.id) {
+                ({ response, data } = await api.patch(`/itineraries/${currentItinerary.id}`, submitData));
             }
-
+            else {
+                ({ response, data } = await api.post("/itineraries", submitData));
+            }
+            if (!response.ok) throw new Error(data.message || "Lỗi khi lưu lịch trình");
             toast.success("Lưu lộ trình thành công!", { id: toastId });
 
             setStep("SETUP");

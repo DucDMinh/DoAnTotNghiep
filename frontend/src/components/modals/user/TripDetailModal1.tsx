@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, Compass, Luggage, MapPin, X, Navigation, Map, Sav
 import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 
 const RouteMapViewer = dynamic(() => import("@/components/admin/itineraries/builder/RouteMapViewer"), {
     ssr: false,
@@ -18,16 +19,14 @@ const RouteMapViewer = dynamic(() => import("@/components/admin/itineraries/buil
 
 export const TripDetailModal1 = ({
     itinerary,
-    onClose,
-    onSave
+    onClose
 }: {
     itinerary: Itinerary;
     onClose: () => void;
     onSave: () => void
 }) => {
     const [activeTab, setActiveTab] = useState<"itinerary" | "checklist" | "map">("itinerary");
-
-    // 🌟 STATE QUẢN LÝ FORM DỮ LIỆU
+    const router = useRouter();
     const [editForm, setEditForm] = useState({
         title: itinerary.title || "",
         summary: itinerary.summary || "",
@@ -39,7 +38,6 @@ export const TripDetailModal1 = ({
         share: itinerary.share || false,
     });
 
-    // 🌟 HÀM TỰ TÍNH TOÁN SỐ NGÀY/ĐÊM TỪ NGÀY ĐI VÀ VỀ
     const getDuration = () => {
         if (!editForm.start_date || !editForm.end_date) return { days: itinerary.days || 1, nights: itinerary.nights || 0 };
         const d1 = new Date(editForm.start_date);
@@ -50,11 +48,6 @@ export const TripDetailModal1 = ({
         return { days: diffDays + 1, nights: diffDays };
     };
     const duration = getDuration();
-
-    const handleSave = () => {
-        onSave();
-        onClose();
-    };
 
     const defaultChecklist = [
         { item: "Căn cước công dân / Hộ chiếu", checked: true },
@@ -95,7 +88,6 @@ export const TripDetailModal1 = ({
                             </button>
                         </div>
 
-                        {/* Image Preview */}
                         <div className="relative h-40 sm:h-48 rounded-2xl overflow-hidden shadow-md mb-6 border border-[var(--border-color)] shrink-0 group">
                             <img src={editForm.image_url || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'} alt={editForm.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -104,7 +96,6 @@ export const TripDetailModal1 = ({
                             <WashiTape color="var(--washi-coral)" className="top-3 left-3 w-24 -rotate-6" />
                         </div>
 
-                        {/* Các Field Nhập Liệu */}
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Tên lộ trình</label>
@@ -181,8 +172,6 @@ export const TripDetailModal1 = ({
                                     placeholder="https://..."
                                 />
                             </div>
-
-                            {/* Share Toggle */}
                             <div className="flex items-center justify-between p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl">
                                 <div>
                                     <p className="font-bold text-sm flex items-center gap-1.5">
@@ -202,13 +191,11 @@ export const TripDetailModal1 = ({
                             </div>
                         </div>
                     </div>
-
-                    {/* Action Buttons */}
                     <div className="mt-4 pt-4 flex gap-3 shrink-0 bg-[var(--bg-bento)] border-t border-[var(--border-color)]">
                         <button onClick={onClose} className="flex-1 py-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] font-bold text-sm hover:text-[var(--text-main)] transition-colors shadow-sm">
                             Hủy
                         </button>
-                        <button onClick={handleSave} className="flex-1 py-3.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-sm shadow-[0_4px_12px_rgba(var(--accent-primary-rgb),0.3)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                        <button onClick={() => router.push(`/MyItinerary/${itinerary.id}/builder`)} className="flex-1 py-3.5 rounded-xl bg-[var(--accent-primary)] text-white font-bold text-sm shadow-[0_4px_12px_rgba(var(--accent-primary-rgb),0.3)] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                             <Save className="w-4 h-4" /> Cập nhật
                         </button>
                     </div>
