@@ -89,6 +89,10 @@ class ItineraryRepository extends BaseRepository {
                         id,
                         name
                     )
+                ),
+                user_id (
+                    id,
+                    name
                 )
             `)
             .order('created_at', { ascending: false });

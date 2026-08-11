@@ -30,7 +30,6 @@ export const SetupScreen: React.FC<SetupScreenProp> = (props) => {
             },
             { root: null, rootMargin: "20px", threshold: 0 }
         );
-
         if (loaderRef.current) observer.observe(loaderRef.current);
         return () => observer.disconnect();
     }, [step, visibleCount, templates.length]);
