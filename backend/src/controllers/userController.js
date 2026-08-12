@@ -93,7 +93,7 @@ class UserController extends BaseController {
                 };
                 return;
             }
-            const response = await this.repository.getById(id);
+            const response = await this.repository.getById(targetId);
             if (!response) {
                 ctx.status = 400;
                 ctx.body = {
@@ -126,19 +126,28 @@ class UserController extends BaseController {
                     await deleteImageFromStorage(response.background_image);
                 }
             }
-            if (payload.password && (await bcrypt.compare(payload.password, response.password_hash))) {
-                ctx.status = 400;
-                ctx.body = {
-                    success: false,
-                    message: "Mật khẩu mới phải khác mật khẩu cũ"
-                };
-                return;
-            }
             if (payload.password) {
+                if (!payload.oldPassword) {
+                    ctx.status = 400;
+                    ctx.body = { success: false, message: "Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu mới" };
+                    return;
+                }
+                const isOldPasswordCorrect = await bcrypt.compare(payload.oldPassword, response.password_hash);
+                if (!isOldPasswordCorrect) {
+                    ctx.status = 400;
+                    ctx.body = { success: false, message: "Mật khẩu hiện tại không chính xác" };
+                    return;
+                }
+                const isNewPasswordSameAsOld = await bcrypt.compare(payload.password, response.password_hash);
+                if (isNewPasswordSameAsOld) {
+                    ctx.status = 400;
+                    ctx.body = { success: false, message: "Mật khẩu mới phải khác mật khẩu hiện tại" };
+                    return;
+                }
                 const salt = await bcrypt.genSalt(10);
                 payload.password_hash = await bcrypt.hash(payload.password, salt);
-                delete payload.password;
             }
+
             if (payload.email && payload.email !== response.email) {
                 const isExist = await this.repository.checkExistEmail(payload.email);
                 if (isExist) {
@@ -150,7 +159,9 @@ class UserController extends BaseController {
                     return;
                 }
             }
-            const data = await this.repository.update(id, payload);
+            delete payload.password;
+            delete payload.oldPassword;
+            const data = await this.repository.update(targetId, payload);
             ctx.status = 200;
             ctx.body = {
                 success: true,
