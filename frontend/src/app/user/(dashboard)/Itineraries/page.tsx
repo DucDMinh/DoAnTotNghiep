@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
@@ -13,90 +12,29 @@ import {
 } from "lucide-react";
 import { Itinerary } from "@/interface";
 import toast from "react-hot-toast";
-import { api } from "@/lib/apiClient";
-import { TripDetailModal2 } from "@/components/modals/user/TripDetailModal2";
-import { useAuth } from "@/hooks/auth/AuthContext";
-import confetti from "canvas-confetti";
+import { api } from "@/lib/apiClient"; // Nhớ import hàm api của bạn
 
-const THEMES = ["Biển đảo", "Núi rừng", "Văn hóa", "Cắm trại", "Chữa lành", "Trekking & Khám phá"];
+const THEMES = ["Biển đảo", "Núi rừng", "Văn hóa", "Cắm trại", "Chữa lành"];
 const PRICE_RANGES = [
     { id: "all", label: "Tất cả mức giá" },
     { id: "low", label: "Dưới 2 triệu" },
     { id: "mid", label: "2 - 5 triệu" },
     { id: "high", label: "Trên 5 triệu" }
 ];
-function triggerConfetti() {
-    confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ["#FF5A36", "#0EA5E9", "#10B981", "#F59E0B"],
-    });
-}
 
 export default function ExploreItinerariesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
     const [priceRange, setPriceRange] = useState("all");
+    const [selectedProvince, setSelectedProvince] = useState("all"); // State mới cho tỉnh thành
     const [savedTrips, setSavedTrips] = useState<string[]>([]);
     const [itineraries, setItineraries] = useState<Itinerary[]>([]);
-    const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const { user: currentUser } = useAuth();
 
     const handleThemeToggle = (theme: string) => {
         setSelectedThemes(prev =>
             prev.includes(theme) ? prev.filter(t => t !== theme) : [...prev, theme]
         );
-    };
-    const handleViewDetailItinerary = async (id: string) => {
-        const toastId = toast.loading("...");
-        try {
-            const { data, response } = await api.get(`/itineraries/${id}`)
-            if (!response.ok) throw new Error(data.message || "Lỗi khi lấy dữ liệu lộ trình");
-            setActiveTripDetail(data.data.data)
-            toast.success("ok", { id: toastId })
-        } catch (err: any) {
-            console.error("Lỗi clone:", err);
-            toast.error(err.message || "Có lỗi xảy ra khi clone lộ trình", { id: toastId });
-        }
-    }
-    const handleCloneTrip = async (iti: Itinerary) => {
-        const toastId = toast.loading("Đang clone...");
-        try {
-            const { data: responseData, response: full_response } = await api.get(`/itineraries/${iti.id}`);
-            if (!full_response.ok) throw new Error(responseData.message || "Lỗi khi lấy dữ liệu lộ trình");
-            const full_iti = responseData.data.data || responseData;
-            const {
-                id,
-                created_at,
-                user_id,
-                ...restItinerary
-            } = full_iti;
-            const cleanDays = restItinerary.itinerary_days?.map((day: any) => {
-                const { id, itinerary_id, ...restDay } = day;
-                const cleanLocations = restDay.itinerary_locations?.map((loc: any) => {
-                    const { id, itinerary_day_id, ...restLoc } = loc;
-                    return restLoc;
-                });
-                return { ...restDay, itinerary_locations: cleanLocations };
-            });
-            const payload = {
-                ...restItinerary,
-                itinerary_days: cleanDays,
-                title: `Bản sao - ${full_iti.title}`,
-                share: false,
-                user_id: currentUser?.id || "",
-                cloned_from_id: full_iti.id
-            };
-            const { data, response } = await api.post(`/itineraries`, payload);
-            if (!response.ok) throw new Error(data.message || "Lỗi khi clone lộ trình");
-            toast.success(`Đã lưu "${full_iti.title}" vào sổ tay!`, { id: toastId });
-            triggerConfetti();
-        } catch (err: any) {
-            console.error("Lỗi clone:", err);
-            toast.error(err.message || "Có lỗi xảy ra khi clone lộ trình", { id: toastId });
-        }
     };
 
     const fetchItineraries = async () => {
@@ -122,19 +60,30 @@ export default function ExploreItinerariesPage() {
             prev.includes(id) ? prev.filter(tripId => tripId !== id) : [...prev, id]
         );
     };
-
+    const availableProvinces = useMemo(() => {
+        const provs = new Set<string>();
+        itineraries.forEach(trip => {
+            trip.itinerary_provinces?.forEach(p => {
+                if (p.provinces?.name) provs.add(p.provinces.name);
+            });
+        });
+        return Array.from(provs).sort();
+    }, [itineraries]);
     const filteredTrips = useMemo(() => {
         return itineraries.filter(trip => {
             const matchSearch = trip.title.toLowerCase().includes(searchQuery.toLowerCase());
             const matchTheme = selectedThemes.length === 0 || selectedThemes.includes(trip.theme);
+            const matchProvince = selectedProvince === "all" ||
+                trip.itinerary_provinces?.some(p => p.provinces?.name === selectedProvince);
             let matchPrice = true;
-            if (priceRange === "low") matchPrice = trip.estimated_cost < 2000000;
-            if (priceRange === "mid") matchPrice = trip.estimated_cost >= 2000000 && trip.estimated_cost <= 5000000;
-            if (priceRange === "high") matchPrice = trip.estimated_cost > 5000000;
+            const cost = Number(trip.estimated_cost) || 0;
+            if (priceRange === "low") matchPrice = cost < 2000000;
+            if (priceRange === "mid") matchPrice = cost >= 2000000 && cost <= 5000000;
+            if (priceRange === "high") matchPrice = cost > 5000000;
 
-            return matchSearch && matchTheme && matchPrice;
+            return matchSearch && matchTheme && matchPrice && matchProvince;
         });
-    }, [searchQuery, selectedThemes, priceRange, itineraries]);
+    }, [searchQuery, selectedThemes, priceRange, selectedProvince, itineraries]);
 
     return (
         <div className="min-h-screen bg-[var(--bg-paper)] font-sans pb-20">
@@ -175,7 +124,11 @@ export default function ExploreItinerariesPage() {
                     </motion.div>
                 </div>
             </div>
+
+            {/* MAIN LAYOUT */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 flex flex-col lg:flex-row gap-8">
+
+                {/* SIDEBAR FILTER */}
                 <aside className="w-full lg:w-72 shrink-0">
                     <div className="sticky top-24 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm space-y-8">
                         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4">
@@ -183,15 +136,36 @@ export default function ExploreItinerariesPage() {
                                 <SlidersHorizontal className="w-5 h-5 text-[var(--accent-primary)]" />
                                 <h3 className="font-bold text-lg text-[var(--text-main)]">Bộ lọc</h3>
                             </div>
-                            {(selectedThemes.length > 0 || priceRange !== 'all') && (
+
+                            {/* NÚT XÓA LỌC */}
+                            {(selectedThemes.length > 0 || priceRange !== 'all' || selectedProvince !== 'all') && (
                                 <button
-                                    onClick={() => { setSelectedThemes([]); setPriceRange('all'); }}
+                                    onClick={() => { setSelectedThemes([]); setPriceRange('all'); setSelectedProvince('all') }}
                                     className="text-sm text-[var(--accent-primary)] font-medium hover:underline"
                                 >
                                     Xóa lọc
                                 </button>
                             )}
                         </div>
+
+                        {/* 🌟 FILTER MỚI: TỈNH THÀNH */}
+                        <div>
+                            <h4 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-[var(--text-muted)]" /> Điểm đến
+                            </h4>
+                            <select
+                                value={selectedProvince}
+                                onChange={(e) => setSelectedProvince(e.target.value)}
+                                className="w-full bg-[var(--bg-paper)] border border-[var(--border-color)] text-[var(--text-main)] text-sm font-bold py-3 px-4 rounded-xl outline-none cursor-pointer focus:border-[var(--accent-primary)] transition-colors appearance-none"
+                            >
+                                <option value="all">Tất cả điểm đến</option>
+                                {availableProvinces.map(prov => (
+                                    <option key={prov} value={prov}>{prov}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Filter: Chủ đề */}
                         <div>
                             <h4 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-[var(--text-muted)]" /> Phong cách
@@ -211,13 +185,19 @@ export default function ExploreItinerariesPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Filter: Mức giá */}
                         <div>
                             <h4 className="font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
                                 <Wallet className="w-4 h-4 text-[var(--text-muted)]" /> Ngân sách dự kiến
                             </h4>
                             <div className="space-y-3">
                                 {PRICE_RANGES.map(range => (
-                                    <label key={range.id} className="flex items-center gap-3 cursor-pointer group">
+                                    <label
+                                        key={range.id}
+                                        onClick={() => setPriceRange(range.id)} // 🌟 ĐÃ FIX LỖI THIẾU ONCLICK Ở ĐÂY
+                                        className="flex items-center gap-3 cursor-pointer group"
+                                    >
                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors ${priceRange === range.id
                                             ? 'border-[var(--accent-primary)]'
                                             : 'border-[var(--text-muted)] group-hover:border-[var(--accent-primary)]'
@@ -233,12 +213,14 @@ export default function ExploreItinerariesPage() {
                         </div>
                     </div>
                 </aside>
+
+                {/* DANH SÁCH LỘ TRÌNH (HORIZONTAL CARDS) */}
                 <main className="flex-1">
                     <div className="flex items-center justify-between mb-6">
                         <p className="text-[var(--text-muted)] font-medium">
                             Tìm thấy <span className="text-[var(--accent-primary)] font-bold text-lg">{filteredTrips.length}</span> lộ trình
                         </p>
-                        <select className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm font-bold py-2.5 px-4 rounded-xl outline-none cursor-pointer focus:border-[var(--accent-primary)]">
+                        <select className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] text-sm font-bold py-2.5 px-4 rounded-xl outline-none cursor-pointer focus:border-[var(--accent-primary)] appearance-none">
                             <option>Đề xuất cho bạn</option>
                             <option>Đánh giá cao nhất</option>
                             <option>Mới nhất</option>
@@ -247,6 +229,7 @@ export default function ExploreItinerariesPage() {
 
                     <div className="space-y-6">
                         {isLoading ? (
+                            // Loading Skeleton
                             [1, 2, 3].map(n => (
                                 <div key={n} className="h-64 rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] animate-pulse"></div>
                             ))
@@ -263,19 +246,23 @@ export default function ExploreItinerariesPage() {
                                     </motion.div>
                                 ) : (
                                     filteredTrips.map((trip, index) => {
+                                        // Bóc tách địa điểm
                                         const provincesText = trip.itinerary_provinces && trip.itinerary_provinces.length > 0
                                             ? trip.itinerary_provinces.map(p => p.provinces?.name).filter(Boolean).join(", ")
                                             : "Chưa xác định điểm đến";
+
+                                        // Bóc tách tác giả
                                         const authorName = trip.user_id?.name || "Người dùng ẩn danh";
+
                                         return (
                                             <motion.div
-                                                onClick={() => handleViewDetailItinerary(trip.id)}
                                                 key={trip.id}
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ duration: 0.4, delay: index * 0.1 }}
                                                 className="group flex flex-col md:flex-row bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2rem] overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
                                             >
+                                                {/* IMAGE SECTION */}
                                                 <div className="md:w-80 h-64 md:h-auto relative overflow-hidden shrink-0 bg-gray-200">
                                                     <img
                                                         src={trip.image_url || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'}
@@ -295,6 +282,8 @@ export default function ExploreItinerariesPage() {
                                                         <Compass className="w-3.5 h-3.5 text-[var(--accent-primary)]" /> {trip.theme}
                                                     </div>
                                                 </div>
+
+                                                {/* CONTENT SECTION */}
                                                 <div className="p-6 md:p-7 flex flex-col flex-1">
                                                     <div className="flex justify-between items-start mb-3">
                                                         <div>
@@ -310,7 +299,11 @@ export default function ExploreItinerariesPage() {
                                                     <p className="text-[var(--text-muted)] text-sm line-clamp-2 mb-4 leading-relaxed">
                                                         {trip.summary}
                                                     </p>
+
+                                                    {/* Footer Card */}
                                                     <div className="mt-auto flex flex-col sm:flex-row sm:items-center justify-between pt-5 border-t border-[var(--border-color)] gap-4">
+
+                                                        {/* Author Info */}
                                                         <div className="flex items-center gap-3">
                                                             {trip.user_id?.avatar ? (
                                                                 <img src={trip.user_id.avatar} alt="Author" className="w-8 h-8 rounded-full object-cover border border-[var(--border-color)]" />
@@ -319,6 +312,8 @@ export default function ExploreItinerariesPage() {
                                                             )}
                                                             <span className="text-sm font-bold text-[var(--text-main)]">{authorName}</span>
                                                         </div>
+
+                                                        {/* Stats & Button */}
                                                         <div className="flex items-center gap-4 justify-between sm:justify-end w-full sm:w-auto">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="flex flex-col items-end">
@@ -346,21 +341,8 @@ export default function ExploreItinerariesPage() {
                             </AnimatePresence>
                         )}
                     </div>
-
-                    {filteredTrips.length > 0 && !isLoading && (
-                        <div className="mt-12 flex justify-center">
-                            <button className="px-8 py-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] font-bold hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-all flex items-center gap-2 shadow-sm">
-                                Tải thêm lộ trình <TrendingUp className="w-5 h-5" />
-                            </button>
-                        </div>
-                    )}
                 </main>
             </div>
-            <AnimatePresence>
-                {activeTripDetail && (
-                    <TripDetailModal2 currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
-                )}
-            </AnimatePresence>
         </div>
     );
 }

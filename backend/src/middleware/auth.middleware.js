@@ -20,6 +20,7 @@ export const verifyToken = async (ctx, next) => {
         ctx.state.user = decoded;
         await next();
     } catch (error) {
+        console.log("CHI TIẾT LỖI JWT:", error.name, error.message);
         ctx.status = 401;
         if (error.name === 'TokenExpiredError') {
             ctx.body = {

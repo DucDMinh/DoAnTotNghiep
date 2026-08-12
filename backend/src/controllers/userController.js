@@ -83,7 +83,16 @@ class UserController extends BaseController {
     }
     update = async (ctx) => {
         try {
-            const id = ctx.params.id;
+            const targetId = ctx.params.id;
+            const currentUser = ctx.state.user;
+            if (currentUser.id !== targetId && currentUser.role !== 'ADMIN') {
+                ctx.status = 403;
+                ctx.body = {
+                    success: false,
+                    message: 'Bảo mật: Bạn không có quyền chỉnh sửa thông tin của người khác!'
+                };
+                return;
+            }
             const response = await this.repository.getById(id);
             if (!response) {
                 ctx.status = 400;
@@ -93,12 +102,28 @@ class UserController extends BaseController {
                 }
                 return;
             }
-            const payload = { ...ctx.request.body }
-            const file = ctx.file || (ctx.request && ctx.request.file);
-            if (file) {
-                payload.avatar = await uploadImageToStorage(file, 'user_avatars')
+            const payload = { ...ctx.request.body };
+            const files = ctx.files || (ctx.request && ctx.request.files) || {};
+            let avatarFile = files.avatar ? (Array.isArray(files.avatar) ? files.avatar[0] : files.avatar) : null;
+            let bgFile = files.background_image ? (Array.isArray(files.background_image) ? files.background_image[0] : files.background_image) : null;
+            if (!avatarFile && !bgFile && (ctx.file || (ctx.request && ctx.request.file))) {
+                const singleFile = ctx.file || (ctx.request && ctx.request.file);
+                if (singleFile.fieldname === 'background_image') {
+                    bgFile = singleFile;
+                } else if (singleFile.fieldname === 'avatar') {
+                    avatarFile = singleFile;
+                }
+            }
+            if (avatarFile) {
+                payload.avatar = await uploadImageToStorage(avatarFile, 'user_avatars');
                 if (response.avatar) {
-                    await deleteImageFromStorage(response.avatar)
+                    await deleteImageFromStorage(response.avatar);
+                }
+            }
+            if (bgFile) {
+                payload.background_image = await uploadImageToStorage(bgFile, 'user_backgrounds');
+                if (response.background_image) {
+                    await deleteImageFromStorage(response.background_image);
                 }
             }
             if (payload.password && (await bcrypt.compare(payload.password, response.password_hash))) {
@@ -111,8 +136,7 @@ class UserController extends BaseController {
             }
             if (payload.password) {
                 const salt = await bcrypt.genSalt(10);
-                const password_hash = await bcrypt.hash(payload.password, salt);
-                payload.password_hash = password_hash;
+                payload.password_hash = await bcrypt.hash(payload.password, salt);
                 delete payload.password;
             }
             if (payload.email && payload.email !== response.email) {
@@ -130,11 +154,16 @@ class UserController extends BaseController {
             ctx.status = 200;
             ctx.body = {
                 success: true,
-                message: `Sửa thông tin thành công user ${payload.name}`
+                message: `Sửa thông tin thành công user ${payload.name || response.name}`
             }
+
         } catch (error) {
             ctx.status = 500;
-            ctx.body = { success: false, message: `Lỗi hệ thống khi cập nhật ${this.itemName}`, error_detail: error.message };
+            ctx.body = {
+                success: false,
+                message: `Lỗi hệ thống khi cập nhật người dùng`,
+                error_detail: error.message
+            };
         }
     }
 }

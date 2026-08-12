@@ -10,6 +10,12 @@ router.post('/', upload.single('avatar'), userController.createUser);
 router.get('/', verifyToken, requireAdmin, userController.getAllUser);
 router.get('/:id', verifyToken, userController.getUserById);
 router.delete('/:id', verifyToken, requireAdmin, userController.deleteUser);
-router.patch('/:id', verifyToken, upload.single('avatar'), userController.updateUser);
 
-export default router
+const cpUpload = upload.fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'background_image', maxCount: 1 }
+]);
+
+router.patch('/:id', verifyToken, cpUpload, userController.updateUser);
+
+export default router;

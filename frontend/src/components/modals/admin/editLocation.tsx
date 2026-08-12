@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-    X, MapPin, Link as LinkIcon, Image as ImageIcon,
-    UploadCloud, AlertTriangle, FileText, Map, Compass, Sparkles
+    X, Link as LinkIcon, Image as ImageIcon,
+    UploadCloud, AlertTriangle, FileText, Compass, Sparkles
 } from "lucide-react";
 import { EditLocationModalProps } from "@/interface"
 
@@ -60,7 +60,6 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
 
                 <div className="grid h-full w-full grid-cols-1 lg:grid-cols-12 relative">
 
-                    {/* NÚT ĐÓNG MODAL - ĐẶT NỔI Ở GÓC TUYỆT ĐỐI */}
                     <button
                         onClick={() => setIsEditModalOpen(false)}
                         className="absolute right-4 top-4 z-50 rounded-full bg-white/80 p-2.5 text-gray-500 shadow-lg backdrop-blur-md transition-all hover:bg-red-500 hover:text-white dark:bg-gray-800/80 dark:text-gray-400 dark:hover:bg-red-500"
@@ -68,9 +67,7 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
                         <X className="h-5 w-5" />
                     </button>
 
-                    {/* ================= CỘT TRÁI: BẢN ĐỒ TRÀN VIỀN (Chiếm 5 phần) ================= */}
                     <div className="relative hidden h-full flex-col lg:col-span-5 lg:flex border-r border-gray-100 dark:border-gray-800">
-                        {/* Map Canvas */}
                         <div className="relative z-0 h-full w-full overflow-hidden">
                             <MapPicker
                                 lat={formData.lat}
@@ -92,7 +89,6 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Floating HUD: Thẻ hiển thị tọa độ góc dưới */}
                         <div className="absolute bottom-4 left-4 right-4 z-10 grid grid-cols-2 gap-3 rounded-2xl bg-gray-950/80 p-3.5 shadow-xl backdrop-blur-md border border-white/10">
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Vĩ độ (Latitude)</label>
@@ -138,12 +134,10 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
                         {/* Vùng cuộn chứa Form */}
                         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-5">
                             <form id="edit-location-form" onSubmit={handleEditSubmit} className="space-y-5">
-
                                 {/* MODULE 1: TRÍCH XUẤT TỌA ĐỘ NHANH */}
                                 <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 p-4 dark:border-blue-900/30">
                                     <label className="mb-2 flex items-center text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-400">
                                         <LinkIcon className="mr-2 h-3.5 w-3.5" />
-                                        Nhập nhanh qua Google Maps Link
                                     </label>
                                     <div className="flex gap-2">
                                         <input

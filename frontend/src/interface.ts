@@ -168,5 +168,6 @@ export interface User {
     avatar?: string;
     itineraries: Itinerary[];
     phone_number: number;
+    background_image: string;
 }
 export type UserRole = "ADMIN" | "USER";
