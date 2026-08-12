@@ -1,30 +1,193 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Itinerary } from "@/interface";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CompassIcon, Send, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import { TripDetailModal2 } from "./TripDetailModal2";
+import { useAuth } from "@/hooks/auth/AuthContext";
+import toast from "react-hot-toast";
+import { api } from "@/lib/apiClient";
 
-export function AiPlannerModal({ onClose, onSuccess, notify }: { onClose: () => void; onSuccess: (trip: Itinerary) => void; notify: (msg: string, icon: string) => void }) {
+export function AiPlannerModal({
+    onClose,
+    onSuccess,
+    notify
+}: {
+    onClose: () => void;
+    onSuccess: (trip: Itinerary) => void;
+    notify: (msg: string, icon: string) => void
+}) {
     const [prompt, setPrompt] = useState("");
     const [days, setDays] = useState(3);
     const [style, setStyle] = useState("Thư giãn & Healing");
     const [budgetLevel, setBudgetLevel] = useState("Trung bình");
+    const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [stepText, setStepText] = useState("");
+    const { user: currentUser } = useAuth();
 
-    const handleGenerate = (e: React.FormEvent) => {
+    const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!prompt.trim()) { notify("Vui lòng nhập điểm đến hoặc ý tưởng chuyến đi", "⚠️"); return; }
+
+        if (!prompt.trim()) {
+            notify("Vui lòng nhập điểm đến hoặc ý tưởng chuyến đi", "⚠️");
+            return;
+        }
+
         setIsGenerating(true);
-        const steps = ["AI đang phân tích thời tiết & mùa du lịch...", "Đang tổng hợp các quán ăn local ngon-bổ-rẻ...", "Đang vẽ bản đồ di chuyển tối ưu nhất...", "Đang tối ưu ngân sách theo phong cách của bạn...", "Hoàn tất! Đang đóng gói lộ trình..."];
+
+        const steps = [
+            "AI đang phân tích yêu cầu của bạn...",
+            "Đang quét dữ liệu địa điểm từ hệ thống...",
+            "Đang sắp xếp tuyến đường tối ưu nhất...",
+            "Đang tính toán ngân sách và thời gian...",
+            "Sắp xong rồi! Đang đóng gói lộ trình..."
+        ];
+
         let stepIdx = 0;
-        const interval = setInterval(() => { setStepText(steps[stepIdx % steps.length]); stepIdx++; if (stepIdx === steps.length) clearInterval(interval); }, 800);
-        setTimeout(() => {
+        setStepText(steps[0]);
+        const interval = setInterval(() => {
+            stepIdx++;
+            setStepText(steps[stepIdx % steps.length]);
+        }, 1200);
+
+        try {
+            const enrichedPrompt = `Đi ${prompt.trim()}. Phong cách: ${style}. Ngân sách: ${budgetLevel}.`;
+            const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+            const response = await fetch('http://localhost:8000/ai/planner', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    prompt: enrichedPrompt,
+                    days_count: days
+                })
+            });
+
+            const result = await response.json();
             clearInterval(interval);
-            const newItinerary: Itinerary = {
-                id: `ai-${Date.now()}`, title: `Lộ trình ${days} ngày: ${prompt}`, summary: `Lộ trình cá nhân hóa bởi AI Travel Agent (${style})`, start_date: new Date().toISOString(), end_date: new Date(Date.now() + days * 86400000).toISOString(), theme: `${style.split(" ")[0]}, AI Gợi ý`, days: days, nights: days - 1, estimated_cost: days * 1500000 + (budgetLevel === "Cao" ? 2000000 : budgetLevel === "Thấp" ? -1000000 : 0), image_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop", share: false, user_id: { name: "AI Agent 🤖", avatar: "🤖", id: "", email: "", role: "USER", status: "active", created_at: "", itineraries: [], phone_number: 0 }, itinerary_provinces: [{ provinces: { name: prompt.split(" ")[0] || "Việt Nam", id: "" } }], itinerary_days: [{ id: `day1-${Date.now()}`, day_number: 1, title: "Khám phá bản sắc địa phương", itinerary_locations: [{ id: "loc1", day_id: "", location_id: "", sequence_order: 1, cost: 0, lat: 0, lng: 0, start_time: "08:00", end_time: "09:00", location_name: "Ăn sáng đặc sản địa phương", activity_note: "Trải nghiệm ẩm thực không thể bỏ qua" }] }]
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Có lỗi xảy ra khi tạo lộ trình AI");
+            }
+
+            const rawAiData = result.data;
+            const now = Date.now();
+
+            const hydratedItinerary: Itinerary = {
+                id: `ai-iti-${now}`,
+                title: rawAiData.title || `Lộ trình ${days} ngày: ${prompt}`,
+                summary: rawAiData.summary || "",
+                theme: rawAiData.theme || style,
+                estimated_cost: rawAiData.estimated_cost || 0,
+                start_date: new Date().toISOString(),
+                end_date: new Date(now + days * 86400000).toISOString(),
+                days: days,
+                nights: days > 1 ? days - 1 : 0,
+                image_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop",
+                share: false,
+                user_id: currentUser as any || null,
+                itinerary_provinces: rawAiData.itinerary_provinces?.map((prov: any) => ({
+                    province_id: prov.province_id,
+                    provinces: {
+                        id: prov.province_id,
+                        name: prov.province_name || "Việt Nam"
+                    }
+                })) || [],
+                itinerary_days: rawAiData.itinerary_days?.map((day: any, dIdx: number) => ({
+                    id: `ai-day-${now}-${dIdx}`,
+                    day_number: day.day_number || dIdx + 1,
+                    title: day.title || `Ngày ${dIdx + 1}`,
+                    itinerary_locations: day.itinerary_locations?.map((loc: any, lIdx: number) => ({
+                        id: `ai-loc-${now}-${dIdx}-${lIdx}`,
+                        day_id: `ai-day-${now}-${dIdx}`,
+                        location_id: loc.location_id || "",
+                        location_name: loc.location_name || "",
+                        lat: loc.lat || 0,
+                        lng: loc.lng || 0,
+                        sequence_order: loc.sequence_order || lIdx + 1,
+                        start_time: loc.start_time || "08:00",
+                        end_time: loc.end_time || "10:00",
+                        cost: loc.cost || 0,
+                        activity_note: loc.activity_note || "",
+                        locations: {
+                            id: loc.location_id || "",
+                            name: loc.location_name || "",
+                            img: undefined,
+                            difficulty_level: undefined
+                        }
+                    })) || []
+                })) || []
             };
-            onSuccess(newItinerary);
-        }, 4000);
+
+            notify("Tuyệt vời! Lộ trình AI đã sẵn sàng", "✨");
+            setIsGenerating(false);
+            setActiveTripDetail(hydratedItinerary);
+            if (onSuccess) onSuccess(hydratedItinerary);
+        } catch (error: any) {
+            clearInterval(interval);
+            setIsGenerating(false);
+            notify(error.message || "Lỗi kết nối đến server AI", "❌");
+            console.error("AI Planner Error:", error);
+        }
+    };
+
+    const handleCloneTrip = async (iti: Itinerary) => {
+        const toastId = toast.loading("Đang lưu lộ trình vào hệ thống...");
+        try {
+            const cleanDays = iti.itinerary_days?.map((day: any) => {
+                const cleanLocations = day.itinerary_locations?.map((loc: any) => ({
+                    location_id: loc.location_id,
+                    sequence_order: loc.sequence_order,
+                    start_time: loc.start_time,
+                    end_time: loc.end_time,
+                    cost: loc.cost,
+                    activity_note: loc.activity_note,
+                    location_name: loc.location_name,
+                    lat: loc.lat,
+                    lng: loc.lng
+                }));
+
+                return {
+                    day_number: day.day_number,
+                    title: day.title,
+                    itinerary_locations: cleanLocations
+                };
+            });
+            const cleanProvinces = iti.itinerary_provinces?.map((prov: any) => ({
+                province_id: prov.province_id
+            })) || [];
+
+            // 2. Gom Payload chuẩn để CREATE
+            const payload = {
+                title: iti.title,
+                summary: iti.summary,
+                theme: iti.theme,
+                start_date: iti.start_date,
+                end_date: iti.end_date,
+                days: iti.days,
+                nights: iti.nights,
+                estimated_cost: iti.estimated_cost,
+                share: false,
+                itinerary_days: cleanDays,
+                itinerary_provinces: cleanProvinces,
+                user_id: currentUser?.id
+            };
+
+            const { data, response } = await api.post(`/itineraries`, payload);
+
+            if (!response.ok) throw new Error(data?.message || "Lỗi khi lưu lộ trình");
+
+            toast.success(`Đã lưu "${iti.title}" thành công!`, { id: toastId });
+            setActiveTripDetail(null);
+            onClose();
+
+        } catch (err: any) {
+            console.error("Lỗi lưu lộ trình:", err);
+            toast.error(err.message || "Có lỗi xảy ra khi lưu lộ trình", { id: toastId });
+        }
     };
 
     return (
@@ -57,6 +220,11 @@ export function AiPlannerModal({ onClose, onSuccess, notify }: { onClose: () => 
                     </form>
                 )}
             </motion.div>
+            <AnimatePresence>
+                {activeTripDetail && (
+                    <TripDetailModal2 currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
