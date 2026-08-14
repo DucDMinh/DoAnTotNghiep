@@ -17,8 +17,6 @@ export async function CreateEmbeddedPaymentLink(ctx) {
         returnUrl: `${process.env.YOUR_DOMAIN}`,
         cancelUrl: `${process.env.YOUR_DOMAIN}`,
     };
-    console.log(`${process.env.YOUR_DOMAIN}`)
-
     try {
         const paymentLinkResponse = await payOS.paymentRequests.create(body);
         ctx.status = 200;
@@ -35,5 +33,28 @@ export async function CreateEmbeddedPaymentLink(ctx) {
             success: false,
             message: `Loi: ${error}`
         }
+    }
+}
+
+export async function ReceiveWebhook(ctx) {
+    const webhookData = ctx.request.body;
+    try {
+        const paymentData = payOS.webhooks.verify(webhookData);
+        if (webhookData.code === '00') {
+            console.log(`webhookData: `, webhookData)
+        }
+        ctx.status = 200;
+        ctx.body = {
+            success: true,
+            message: "Webhook processed successfully"
+        };
+
+    } catch (error) {
+        console.error("Lỗi xác thực hoặc xử lý Webhook:", error);
+        ctx.status = 200;
+        ctx.body = {
+            success: false,
+            message: "Invalid webhook or processing error"
+        };
     }
 }

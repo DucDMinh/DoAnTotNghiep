@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "@/lib/apiClient";
 import { usePayOS } from "@payos/payos-checkout";
@@ -46,7 +45,6 @@ const Message = ({ message }: { message: string }) => (
 
 export function PremiumModal({ onClose }: PremiumModalProps) {
     const [selectedPlan, setSelectedPlan] = useState<number>(40);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [isCreatingLink, setIsCreatingLink] = useState(false);
@@ -59,9 +57,11 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
         onSuccess: (event: any) => {
             setIsOpen(false);
             setMessage("Thanh toán thành công! Tài khoản của bạn đã được nâng cấp.");
+            console.log("Dữ liệu thanh toán thành công:", event);
         },
         onCancel: (event: any) => {
             setIsOpen(false);
+            console.log("Khách đã hủy thanh toán:", event);
         }
     });
 
@@ -104,7 +104,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => {
-                        if (!isProcessing && !isOpen) onClose();
+                        if (!isOpen) onClose();
                     }}
                     className="fixed inset-0 bg-slate-900/70 backdrop-blur-md"
                 />
@@ -122,7 +122,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                             if (isOpen) exit();
                             onClose();
                         }}
-                        disabled={isProcessing || isCreatingLink}
+                        disabled={isCreatingLink}
                         className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-[var(--bg-paper)] text-[var(--text-muted)] transition-colors disabled:opacity-50 z-20"
                     >
                         <X className="w-5 h-5" />
@@ -182,7 +182,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                                 return (
                                     <div
                                         key={plan.id}
-                                        onClick={() => !isProcessing && !isOpen && setSelectedPlan(plan.price)}
+                                        onClick={() => !isOpen && setSelectedPlan(plan.price)}
                                         className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-300 text-center ${isOpen ? "cursor-default opacity-80" : "cursor-pointer"
                                             } ${isSelected
                                                 ? "border-orange-500 bg-orange-500/10 shadow-sm"
