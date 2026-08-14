@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
 import { usePayOS } from "@payos/payos-checkout";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,7 +49,8 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [isCreatingLink, setIsCreatingLink] = useState(false);
-
+    const { user: currentUser } = useAuth();
+    const [orderId, setOrderId] = useState('');
     const [payOSConfig, setPayOSConfig] = useState({
         RETURN_URL: window.location.href,
         ELEMENT_ID: "embedded-payment-container",
@@ -65,13 +67,33 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
         }
     });
 
+    const handleCreateOrder = async (selectedPlan: number) => {
+        try {
+            const { data, response } = await api.post('/orders', { user_id: currentUser?.id, amount: selectedPlan * 1000 })
+            if (!response.ok) throw new Error(data.message);
+            setOrderId(data.data.id)
+            handleGetPaymentLink(selectedPlan)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const handleCancelOrder = async (orderId: string) => {
+        try {
+            const { data, response } = await api.patch(`/orders/${orderId}`, { status: "CANCEL" })
+            if (!response.ok) throw new Error(data.message);
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     const { open, exit } = usePayOS(payOSConfig);
 
     const handleGetPaymentLink = async (selectedPlan: number) => {
         setIsCreatingLink(true);
         const toastId = toast.loading("Đang tạo mã QR...");
         try {
-            const { data, response } = await api.post('/create-embedded-payment-link', { selectedPlan: selectedPlan * 1000 });
+            const { data, response } = await api.post('/create-embedded-payment-link', { selectedPlan: selectedPlan });
             if (!response.ok) {
                 throw new Error(data.message || "Có lỗi xảy ra khi tạo mã QR");
             }
@@ -219,7 +241,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                                 id="create-payment-link-btn"
                                 onClick={(event) => {
                                     event.preventDefault();
-                                    handleGetPaymentLink(selectedPlan);
+                                    handleCreateOrder(selectedPlan);
                                 }}
                                 disabled={isCreatingLink}
                                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm font-bold shadow-lg shadow-orange-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100 relative z-10"
@@ -241,6 +263,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                                 onClick={(event) => {
                                     event.preventDefault();
                                     setIsOpen(false);
+                                    handleCancelOrder(orderId)
                                     exit();
                                 }}
                                 className="w-full py-3.5 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-[var(--text-main)] text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-all mt-auto"
