@@ -68,15 +68,33 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
     });
 
     const handleCreateOrder = async (selectedPlan: number) => {
+        setIsCreatingLink(true);
+        const toastId = toast.loading("Đang khởi tạo giao dịch...");
+
         try {
-            const { data, response } = await api.post('/orders', { user_id: currentUser?.id, amount: selectedPlan * 1000 })
-            if (!response.ok) throw new Error(data.message);
-            setOrderId(data.data.id)
-            handleGetPaymentLink(selectedPlan)
-        } catch (error) {
-            console.log(error)
+            const { data, response } = await api.post('/create-embedded-payment-link', {
+                selectedPlan: selectedPlan,
+                userId: currentUser?.id
+            });
+
+            if (!response.ok) {
+                throw new Error(data.message || "Có lỗi xảy ra khi tạo giao dịch");
+            }
+            setOrderId(data.orderId);
+            setPayOSConfig((oldConfig) => ({
+                ...oldConfig,
+                CHECKOUT_URL: data.checkoutUrl,
+            }));
+
+            toast.success("Khởi tạo thành công!", { id: toastId });
+            setIsOpen(true);
+
+        } catch (error: any) {
+            toast.error(error.message, { id: toastId });
+        } finally {
+            setIsCreatingLink(false);
         }
-    }
+    };
 
     const handleCancelOrder = async (orderId: string) => {
         try {
@@ -89,26 +107,6 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
 
     const { open, exit } = usePayOS(payOSConfig);
 
-    const handleGetPaymentLink = async (selectedPlan: number) => {
-        setIsCreatingLink(true);
-        const toastId = toast.loading("Đang tạo mã QR...");
-        try {
-            const { data, response } = await api.post('/create-embedded-payment-link', { selectedPlan: selectedPlan });
-            if (!response.ok) {
-                throw new Error(data.message || "Có lỗi xảy ra khi tạo mã QR");
-            }
-            setPayOSConfig((oldConfig) => ({
-                ...oldConfig,
-                CHECKOUT_URL: data.checkoutUrl,
-            }));
-            toast.success("Tạo mã QR thành công!", { id: toastId });
-            setIsOpen(true);
-            setIsCreatingLink(false);
-        } catch (error) {
-            toast.error(`Lỗi: ${error}`, { id: toastId });
-            setIsCreatingLink(false);
-        }
-    };
 
     useEffect(() => {
         if (payOSConfig.CHECKOUT_URL != '') {
