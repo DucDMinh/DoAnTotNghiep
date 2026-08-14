@@ -5,7 +5,7 @@ import itineraryRoutes from './itinerary.routes.js';
 import authRoutes from './auth.routes.js';
 import userRoutes from './user.routes.js';
 import aiRoutes from './ai.routes.js';
-
+import payosRouter from './payos.routes.js'
 const router = new Router();
 
 router.use(locationRoutes.routes(), locationRoutes.allowedMethods());
@@ -14,4 +14,5 @@ router.use(itineraryRoutes.routes(), itineraryRoutes.allowedMethods());
 router.use(authRoutes.routes(), authRoutes.allowedMethods());
 router.use(userRoutes.routes(), userRoutes.allowedMethods())
 router.use(aiRoutes.routes(), aiRoutes.allowedMethods());
+router.use(payosRouter.routes(), payosRouter.allowedMethods());
 export default router;

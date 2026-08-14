@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { User } from "@/interface";
-import { Compass, CompassIcon, FolderKanban, LogIn, LogOut, Moon, Newspaper, PlusCircle, Settings, Sparkles, Sun, User as UserIcon } from "lucide-react";
+import { Compass, CompassIcon, Crown, FolderKanban, LogIn, LogOut, Moon, Newspaper, PlusCircle, Settings, Sparkles, Sun, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NextLink from "next/link";
 import { useAuth } from "@/hooks/auth/AuthContext";
+import { PremiumModal } from "@/components/payment/PremiumModal";
 
 interface AppHeaderProp {
     setActiveNav: React.Dispatch<React.SetStateAction<string>>;
@@ -37,7 +38,27 @@ export const AppHeader = ({
 }: AppHeaderProp) => {
     const [isMounted, setIsMounted] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const { logout } = useAuth();
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+
+        if (isProfileOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isProfileOpen]);
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -101,7 +122,7 @@ export const AppHeader = ({
                             {!isMounted ? (
                                 <div className="w-24 h-9 bg-gray-200 rounded-full animate-pulse"></div>
                             ) : currentUser ? (
-                                <div className="relative">
+                                <div className="relative" ref={dropdownRef}>
                                     <button
                                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                                         className="block focus:outline-none"
@@ -112,12 +133,9 @@ export const AppHeader = ({
                                             className="w-8 h-8 rounded-full border-2 border-[var(--accent-gold)] object-cover hover:scale-105 transition"
                                         />
                                     </button>
-                                    {isProfileOpen && (
-                                        <div
-                                            className="fixed inset-0 z-40"
-                                            onClick={() => setIsProfileOpen(false)}
-                                        ></div>
-                                    )}
+
+                                    {/* 🌟 Đã xóa thẻ div fixed inset-0 ở đây */}
+
                                     {isProfileOpen && (
                                         <div className="absolute right-0 mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg py-1 z-50 transform origin-top-right transition-all animate-in fade-in slide-in-from-top-2">
                                             <div className="px-4 py-3 border-b border-[var(--border-color)]">
@@ -146,6 +164,16 @@ export const AppHeader = ({
                                                     <Settings className="w-4 h-4 text-[var(--text-muted)]" />
                                                     Cài đặt
                                                 </NextLink>
+                                                <button
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false); // 🌟 Nhớ thêm lệnh đóng khi click nút này
+                                                        setIsPaymentModalOpen(true);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--accent-gold)] hover:bg-[var(--bg-paper)] transition-colors"
+                                                >
+                                                    <Crown className="w-4 h-4" /> {/* Mình đổi icon cho đẹp */}
+                                                    Nâng cấp Premium
+                                                </button>
                                             </div>
                                             <div className="border-t border-[var(--border-color)] py-1">
                                                 <button
@@ -195,6 +223,9 @@ export const AppHeader = ({
                     </button>
                 </div>
             </header>
+            {isPaymentModalOpen && <>
+                <PremiumModal onClose={() => setIsPaymentModalOpen(false)} />
+            </>}
         </>
     )
 }

@@ -1,4 +1,5 @@
 import { Outfit } from 'next/font/google';
+import Script from 'next/script'; // Import component Script của Next.js
 import './globals.css';
 import "flatpickr/dist/flatpickr.css";
 import { SidebarProvider } from '@/context/SidebarContext';
@@ -16,7 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          src="https://cdn.payos.vn/payos-checkout/v1/stable/payos-initialize.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={`${outfit.className} dark:bg-gray-900`}>
         <AuthProvider>
           <ThemeProvider>
