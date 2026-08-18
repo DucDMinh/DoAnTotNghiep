@@ -27,7 +27,7 @@ export async function generateItinerary(ctx) {
         
         LUẬT XỬ LÝ THÔNG MINH (QUAN TRỌNG):
         1. Nếu người dùng nhắc đến một tên thử thách, cung đường, hoặc danh hiệu chung chung (VD: "tứ đại đỉnh đèo", "Xuyên Việt", "vòng cung Tây Bắc"...):
-           - BẠN PHẢI TỰ ĐỘNG NHẬN DIỆN các tỉnh thành/địa điểm cốt lõi tạo nên hành trình đó.
+           - BẠN PHẢI TỰ ĐỘNG PHÂN TÍCH KỸ CÁC ĐỊA ĐIỂM CÓ TRONG YÊU CẦU VÀ TÌM RA CÁC TỈNH/ĐỊA ĐIỂM cốt lõi tạo nên hành trình đó.
            - Chia nhỏ hành trình thành NHIỀU CHẶNG (nhiều phần tử trong mảng route_legs) tương ứng với các tỉnh/địa danh phải đi qua.
         2. province_name: Tên Tỉnh/Thành phố chính của chặng đó.
         3. keywords: Các địa danh, ngọn đèo, hoặc điểm tham quan cụ thể thuộc chặng đó.
@@ -154,8 +154,8 @@ export async function generateItinerary(ctx) {
              + Ngân sách "Thấp" (Tiết kiệm): khoảng 500,000 VNĐ - 700,000 VNĐ / 1 ngày.
              + Ngân sách "Trung bình": khoảng 1,000,000 VNĐ - 1,500,000 VNĐ / 1 ngày.
              + Ngân sách "Cao" (Cao cấp): khoảng 2,500,000 VNĐ - 4,500,000 VNĐ / 1 ngày.
-           - BƯỚC 2: Tính tổng tất cả thuộc tính 'cost' (giá vé/dịch vụ) của các địa điểm bạn ĐÃ CHỌN từ danh sách. (Nếu cost là null thì coi như bằng 0).
-           - BƯỚC 3: Công thức: estimated_cost = (Chi phí sinh hoạt 1 ngày * số ngày) + (Tổng cost các địa điểm). 
+           - BƯỚC 2: Tính thuộc tính 'cost' (giá vé/dịch vụ/nghỉ ngơi) của từng ĐỊA ĐIỂM TRONG NGÀY mà bạn ĐÃ CHỌN từ danh sách và viết 'activity_note' những khoản cần chi. (ĐIỀU NÀY LÀ BẮT BUỘC).
+           - BƯỚC 3: Công thức: estimated_cost = (Tổng cost các địa điểm).
            - Yêu cầu: Trả về một con số nguyên (Ví dụ: 3450000). TUYỆT ĐỐI KHÔNG trả về chuỗi.
         DANH SÁCH ĐỊA ĐIỂM (CHỈ ĐƯỢC CHỌN TRONG NÀY):
         ${JSON.stringify(legsData)}

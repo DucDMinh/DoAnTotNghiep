@@ -169,5 +169,15 @@ export interface User {
     itineraries: Itinerary[];
     phone_number: number;
     background_image: string;
+    is_premium: boolean | false;
+}
+
+export interface Order {
+    id: string;
+    create_at: string;
+    status: string;
+    user_id: string;
+    amount: number;
+    order_code: number
 }
 export type UserRole = "ADMIN" | "USER";

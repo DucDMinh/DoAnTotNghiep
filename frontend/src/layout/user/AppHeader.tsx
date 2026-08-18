@@ -133,9 +133,6 @@ export const AppHeader = ({
                                             className="w-8 h-8 rounded-full border-2 border-[var(--accent-gold)] object-cover hover:scale-105 transition"
                                         />
                                     </button>
-
-                                    {/* 🌟 Đã xóa thẻ div fixed inset-0 ở đây */}
-
                                     {isProfileOpen && (
                                         <div className="absolute right-0 mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg py-1 z-50 transform origin-top-right transition-all animate-in fade-in slide-in-from-top-2">
                                             <div className="px-4 py-3 border-b border-[var(--border-color)]">
@@ -164,16 +161,25 @@ export const AppHeader = ({
                                                     <Settings className="w-4 h-4 text-[var(--text-muted)]" />
                                                     Cài đặt
                                                 </NextLink>
-                                                <button
-                                                    onClick={() => {
-                                                        setIsProfileOpen(false); // 🌟 Nhớ thêm lệnh đóng khi click nút này
-                                                        setIsPaymentModalOpen(true);
-                                                    }}
-                                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--accent-gold)] hover:bg-[var(--bg-paper)] transition-colors"
-                                                >
-                                                    <Crown className="w-4 h-4" /> {/* Mình đổi icon cho đẹp */}
-                                                    Nâng cấp Premium
-                                                </button>
+                                                {currentUser.is_premium ? (<>
+                                                    <button
+                                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--accent-gold)] hover:bg-[var(--bg-paper)] transition-colors"
+                                                    >
+                                                        <Crown className="w-4 h-4" />
+                                                        Bạn là hội viên Premium
+                                                    </button>
+                                                </>) : (<>
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsProfileOpen(false);
+                                                            setIsPaymentModalOpen(true);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-[var(--accent-gold)] hover:bg-[var(--bg-paper)] transition-colors"
+                                                    >
+                                                        <Crown className="w-4 h-4" />
+                                                        Nâng cấp Premium
+                                                    </button></>)}
+
                                             </div>
                                             <div className="border-t border-[var(--border-color)] py-1">
                                                 <button

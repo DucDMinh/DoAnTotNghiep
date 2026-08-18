@@ -95,7 +95,8 @@ export async function login(ctx) {
             {
                 id: user.id,
                 email: user.email,
-                role: user.role || 'USER'
+                role: user.role || 'USER',
+                is_premium: user.is_premium,
             },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
