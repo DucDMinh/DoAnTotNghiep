@@ -367,7 +367,8 @@ function CreateTripModal({ onClose, onSuccess, currentUser, notify }: { onClose:
         const newTrip: Itinerary = {
             id: `manual-${Date.now()}`, title, summary: `Lộ trình ${days} ngày tại ${destination}`, start_date: startDate?.toISOString() || new Date().toISOString(), end_date: startDate ? new Date(startDate.getTime() + days * 86400000).toISOString() : new Date(Date.now() + days * 86400000).toISOString(), theme: theme, days: days, nights: days - 1, estimated_cost: budget, image_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop", share: false, user_id: {
                 name: currentUser?.name ?? "", avatar: currentUser?.avatar ?? "", id: "", email: "", role: "USER", status: "active", created_at: "", itineraries: [], phone_number: 0,
-                background_image: ""
+                background_image: "",
+                is_premium: false
             }, itinerary_provinces: [{ provinces: { name: destination, id: "" } }], itinerary_days: []
         };
         onSuccess(newTrip);

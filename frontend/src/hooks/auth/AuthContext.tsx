@@ -1,5 +1,6 @@
 "use client";
 import { User } from "@/interface";
+import { useRouter } from "next/navigation";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import toast from "react-hot-toast";
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
+    const router = useRouter();
     useEffect(() => {
         const storedToken = localStorage.getItem("accessToken");
         const storedUser = localStorage.getItem("userData");
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("userData");
         document.cookie = "accessToken=; path=/; max-age=0";
         toast.success("Đã đăng xuất thành công!");
+        router.push('/')
     };
 
     return (

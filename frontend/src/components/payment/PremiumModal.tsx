@@ -52,7 +52,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
     const { user: currentUser } = useAuth();
     const [orderId, setOrderId] = useState('');
     const [payOSConfig, setPayOSConfig] = useState({
-        RETURN_URL: window.location.href,
+        RETURN_URL: 'http://localhost:3000',
         ELEMENT_ID: "embedded-payment-container",
         CHECKOUT_URL: '',
         embedded: true,
@@ -62,8 +62,10 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
             console.log("Dữ liệu thanh toán thành công:", event);
         },
         onCancel: (event: any) => {
-            setIsOpen(false);
             console.log("Khách đã hủy thanh toán:", event);
+            setIsOpen(false);
+            setPayOSConfig((old) => ({ ...old, CHECKOUT_URL: '' }));
+            exit();
         }
     });
 

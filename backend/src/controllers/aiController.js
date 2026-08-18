@@ -58,7 +58,7 @@ export async function generateItinerary(ctx) {
         `;
 
         const receptionistRes = await openai.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: "openai/gpt-oss-120b",
             response_format: { type: "json_object" },
             temperature: 0,
             messages: [
@@ -195,7 +195,7 @@ export async function generateItinerary(ctx) {
         `;
 
         const plannerRes = await openai.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
+            model: "openai/gpt-oss-120b",
             response_format: { type: "json_object" },
             temperature: 0.5,
             messages: [
