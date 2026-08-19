@@ -1,5 +1,5 @@
 import { Outfit } from 'next/font/google';
-import Script from 'next/script'; // Import component Script của Next.js
+import Script from 'next/script';
 import './globals.css';
 import "flatpickr/dist/flatpickr.css";
 import { SidebarProvider } from '@/context/SidebarContext';
@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <Script
           src="https://cdn.payos.vn/payos-checkout/v1/stable/payos-initialize.js"
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
       </head>
       <body className={`${outfit.className} dark:bg-gray-900`}>

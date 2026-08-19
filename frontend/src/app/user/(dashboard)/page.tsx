@@ -310,12 +310,8 @@ export default function JournifyUserDashboard() {
 
 
                             </div>
-
-                            {/* Wishlist preview */}
                             <WishlistPreview wishlist={wishlist} setIsAiModalOpen={setIsAiModalOpen} />
                         </section>
-
-                        {/* Gợi ý từ AI (Call to Action) */}
                         <section className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[var(--accent-primary)]/10 to-[var(--accent-gold)]/10 p-8 md:p-10 border border-[var(--border-color)] shadow-sm">
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="flex-1">
@@ -338,7 +334,6 @@ export default function JournifyUserDashboard() {
                 )}
             </main>
 
-            {/* Modals (giữ nguyên) */}
             <AnimatePresence>
                 {activeTripDetail && (
                     <TripDetailModal2 currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
