@@ -29,7 +29,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SidebarProvider>
               {children}
-              <Toaster richColors position="top-right" />
+              <Toaster duration={1500} richColors position="bottom-right" />
             </SidebarProvider>
           </ThemeProvider>
         </AuthProvider>

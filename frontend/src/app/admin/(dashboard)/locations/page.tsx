@@ -399,7 +399,7 @@ export default function LocationsPage() {
   return (
     <div className="min-h-screen pb-12">
       <PageBreadcrumb pageTitle="Quản lý Không gian & Địa điểm" />
-      <Toaster richColors position="top-right" />
+      <Toaster duration={1500} richColors position="bottom-right" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

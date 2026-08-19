@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 import { User } from "@/interface";
 import { useRouter } from "next/navigation";
@@ -21,12 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const storedToken = localStorage.getItem("accessToken");
         const storedUser = localStorage.getItem("userData");
-
         if (storedToken && storedUser) {
-            setTimeout(() => {
-                setToken(storedToken);
-                setUser(JSON.parse(storedUser));
-            }, 0);
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
         }
     }, []);
 
@@ -50,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return (
         <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, login, logout }}>
-            <Toaster richColors position="top-right" />
+            <Toaster duration={1500} richColors position="bottom-right" />
             {children}
         </AuthContext.Provider>
     );

@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -24,6 +22,7 @@ export default function MyItineraryPage() {
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [activeTab, setActiveTab] = useState<"all" | "upcoming" | "past">("all");
     const { setIsCreatingTrip, notify } = useDashboard();
+    const { user: currentUser } = useAuth();
     const filteredItineraries = useMemo(() => {
         const now = new Date();
         return itineraries.filter((iti) => {
@@ -50,26 +49,28 @@ export default function MyItineraryPage() {
             toast.error(err.message || "Có lỗi xảy ra khi xóa lộ trình", { id: toastId });
         }
     };
-    const { user: currentUser } = useAuth();
 
-    const fetchMyItineraries = async () => {
-        try {
-            const { data, response } = await api.get('/itineraries/me');
-            if (!response.ok) {
-                throw new Error("Failed to fetch itineraries");
-            }
-            if (data.userId !== currentUser?.id) {
-                toast.error("Bạn không có quyền truy cập vào lộ trình này");
-            }
-            const my_itineraries: Itinerary[] = data?.data?.data || data?.data || data || [];
-            setItineraries(my_itineraries);
-        } catch (error) {
-            console.error("Error fetching itineraries:", error);
-        }
-    }
+
     useEffect(() => {
-        fetchMyItineraries();
-    }, [])
+        const fetchMyItineraries = async () => {
+            try {
+                const { data, response } = await api.get('/itineraries/me');
+                if (!response.ok) {
+                    throw new Error("Failed to fetch itineraries");
+                }
+                if (currentUser && data.userId !== currentUser.id) {
+                    toast.error("Bạn không có quyền truy cập vào lộ trình này");
+                }
+                const my_itineraries: Itinerary[] = data?.data?.data || data?.data || data || [];
+                setItineraries(my_itineraries);
+            } catch (error) {
+                console.error("Error fetching itineraries:", error);
+            }
+        };
+        if (currentUser) {
+            fetchMyItineraries();
+        }
+    }, [currentUser]);
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
