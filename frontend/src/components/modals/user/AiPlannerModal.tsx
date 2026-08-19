@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Itinerary } from "@/interface";
 import { AnimatePresence, motion } from "framer-motion";
-import { CompassIcon, Send, Sparkles, X } from "lucide-react";
+import { CompassIcon, Send, Sparkles, X, Lock, Crown } from "lucide-react";
 import { useState } from "react";
 import { TripDetailModal2 } from "./TripDetailModal2";
 import { useAuth } from "@/hooks/auth/AuthContext";
@@ -11,22 +11,23 @@ import { api } from "@/lib/apiClient";
 export function AiPlannerModal({
     onClose,
     onSuccess,
-    notify
+    notify,
+    onOpenPremium
 }: {
     onClose: () => void;
     onSuccess: (trip: Itinerary) => void;
-    notify: (msg: string, icon: string) => void
+    notify: (msg: string, icon: string) => void;
+    onOpenPremium?: () => void;
 }) {
     const [prompt, setPrompt] = useState("");
     const [days, setDays] = useState(3);
     const [style, setStyle] = useState("Thư giãn & Healing");
-    // 🌟 THAY ĐỔI: Sử dụng số tiền cụ thể thay vì string "Trung bình"
     const [budgetAmount, setBudgetAmount] = useState<number>(3000000);
-
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [stepText, setStepText] = useState("");
     const { user: currentUser } = useAuth();
+    const isPremium = currentUser?.is_premium === true;
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,31 +59,16 @@ export function AiPlannerModal({
         }, 1200);
 
         try {
-            // 🌟 THAY ĐỔI: Format số tiền vào prompt để AI tự căn ke chi tiêu
             const enrichedPrompt = `Đi ${prompt.trim()}. Phong cách: ${style}. Ngân sách: khoảng ${budgetAmount.toLocaleString('vi-VN')} VNĐ.`;
-            const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-            const response = await fetch('http://localhost:8000/ai/planner', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    prompt: enrichedPrompt,
-                    days_count: days
-                })
-            });
-
-            const result = await response.json();
+            const { response, data } = await api.post('/ai/planner', { prompt: enrichedPrompt, days_count: days });
             clearInterval(interval);
-
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || "Có lỗi xảy ra khi tạo lộ trình AI");
+            if (!response.ok || !data.success) {
+                localStorage.setItem("userData", JSON.stringify(data.user))
+                onClose()
+                throw new Error(data.message || "Có lỗi xảy ra khi tạo lộ trình AI");
             }
-
-            const rawAiData = result.data;
+            const rawAiData = data.data;
             const now = Date.now();
-
             const hydratedItinerary: Itinerary = {
                 id: `ai-iti-${now}`,
                 title: rawAiData.title || `Lộ trình ${days} ngày: ${prompt}`,
@@ -201,20 +187,57 @@ export function AiPlannerModal({
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isGenerating && onClose()} className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[32px] p-6 sm:p-8 shadow-2xl z-10 overflow-hidden">
                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-gold)] rounded-full blur-3xl opacity-20 pointer-events-none" />
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-6 relative z-10">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--accent-primary)] to-[var(--accent-gold)] flex items-center justify-center text-white shadow-md"><Sparkles className="w-5 h-5 animate-spin-slow" /></div>
-                        <div><h3 className="font-display font-bold text-lg">AI Travel Designer</h3><p className="text-xs text-[var(--text-muted)] font-medium">Soạn thảo lộ trình cá nhân hóa trong vài giây</p></div>
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--accent-primary)] to-[var(--accent-gold)] flex items-center justify-center text-white shadow-md">
+                            <Sparkles className="w-5 h-5 animate-spin-slow" />
+                        </div>
+                        <div>
+                            <h3 className="font-display font-bold text-lg">AI Travel Designer</h3>
+                            <p className="text-xs text-[var(--text-muted)] font-medium">Soạn thảo lộ trình cá nhân hóa trong vài giây</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} disabled={isGenerating} className="p-2 rounded-full hover:bg-[var(--bg-paper)] text-[var(--text-muted)] transition-colors disabled:opacity-50"><X className="w-5 h-5" /></button>
+                    <button onClick={onClose} disabled={isGenerating} className="p-2 rounded-full hover:bg-[var(--bg-paper)] text-[var(--text-muted)] transition-colors disabled:opacity-50">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-                {isGenerating ? (
+                {!isPremium ? (
+                    <div className="py-8 text-center flex flex-col items-center justify-center space-y-5 relative z-10">
+                        <div className="relative">
+                            <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner">
+                                <Sparkles className="w-8 h-8 text-slate-400" />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-r from-orange-400 to-yellow-500 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[var(--bg-card)]">
+                                <Lock className="w-4 h-4" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-display font-bold text-xl text-[var(--text-main)] mb-2">Tính năng Đặc quyền</h4>
+                            <p className="text-sm text-[var(--text-muted)] max-w-[280px] mx-auto leading-relaxed">
+                                AI Travel Designer chỉ dành riêng cho thành viên Premium. Nâng cấp ngay để tạo lộ trình không giới hạn!
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                onClose();
+                                if (onOpenPremium) onOpenPremium();
+                            }}
+                            className="w-full sm:w-auto mt-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm font-bold shadow-lg shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Crown className="w-4 h-4" />
+                            <span>Mở khóa Premium ngay</span>
+                        </button>
+                    </div>
+
+                ) : isGenerating ? (
                     <div className="py-12 text-center flex flex-col items-center justify-center space-y-4">
                         <div className="relative w-16 h-16"><div className="absolute inset-0 rounded-full border-4 border-[var(--accent-primary)]/20 animate-ping" /><div className="w-full h-full rounded-full border-4 border-t-[var(--accent-primary)] border-r-[var(--accent-gold)] border-b-transparent border-l-transparent animate-spin" /><CompassIcon className="w-6 h-6 text-[var(--accent-primary)] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" /></div>
                         <h4 className="font-display font-bold text-base animate-pulse text-[var(--text-main)]">{stepText}</h4>
                     </div>
                 ) : (
-                    <form onSubmit={handleGenerate} className="space-y-5">
+                    <form onSubmit={handleGenerate} className="space-y-5 relative z-10">
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Bạn muốn đi đâu hoặc trải nghiệm gì? *</label>
                             <textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="VD: Phú Yên 3 ngày cùng nhóm bạn 4 người..." className="w-full p-4 rounded-2xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-medium outline-none focus:border-[var(--accent-primary)] transition-colors resize-none leading-relaxed" required />
@@ -227,7 +250,6 @@ export function AiPlannerModal({
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 pt-2">
-                            {/* 🌟 Ô Nhập số ngày tự do */}
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Thời gian (Ngày)</label>
                                 <input
@@ -250,8 +272,6 @@ export function AiPlannerModal({
                                 </select>
                             </div>
                         </div>
-
-                        {/* 🌟 Nâng cấp UI Ngân sách: Có số tiền chi tiết + Thanh trượt */}
                         <div>
                             <div className="flex justify-between items-center mb-2">
                                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
@@ -262,7 +282,6 @@ export function AiPlannerModal({
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
-                                {/* Ô nhập tay giá trị chính xác */}
                                 <input
                                     type="number"
                                     min="0"
@@ -272,7 +291,6 @@ export function AiPlannerModal({
                                     className="w-1/3 p-3 rounded-xl bg-[var(--bg-paper)] border border-[var(--border-color)] text-sm font-bold outline-none focus:border-[var(--accent-primary)] transition-colors"
                                     placeholder="Nhập số..."
                                 />
-                                {/* Thanh trượt Slider mượt mà */}
                                 <input
                                     type="range"
                                     min="500000"

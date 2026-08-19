@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/auth/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { CreateTripModal } from "@/components/modals/user/CreateTripModal";
 import { AiPlannerModal } from "@/components/modals/user/AiPlannerModal";
+import { PremiumModal } from "@/components/payment/PremiumModal";
 
 type DashboardContextType = {
     notify: (msg: string, icon?: string) => void;
@@ -37,6 +38,7 @@ export default function UserDashboardLayout({
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isCreatingTrip, setIsCreatingTrip] = useState(false);
     const [theme, setTheme] = useState<"day" | "night">("day");
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
     const { user: currentUser } = useAuth();
     useEffect(() => {
         if (pathname === "/") setActiveNav("dashboard");
@@ -91,13 +93,22 @@ export default function UserDashboardLayout({
                             onClose={() => setIsAiModalOpen(false)}
                             onSuccess={(newTrip) => {
                             }}
+                            onOpenPremium={() => setIsPaymentModalOpen(true)}
                             notify={notify}
                         />
                     )}
-                </AnimatePresence><AnimatePresence>
+                </AnimatePresence>
+                <AnimatePresence>
                     {isCreatingTrip && (
                         <CreateTripModal
                             onClose={() => setIsCreatingTrip(false)}
+                        />
+                    )}
+                </AnimatePresence>
+                <AnimatePresence>
+                    {isPaymentModalOpen && (
+                        <PremiumModal
+                            onClose={() => setIsPaymentModalOpen(false)}
                         />
                     )}
                 </AnimatePresence>

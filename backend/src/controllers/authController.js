@@ -31,7 +31,8 @@ export async function createUser(ctx) {
             {
                 id: newUser.id,
                 email: newUser.email,
-                role: newUser.role || 'USER'
+                role: newUser.role || 'USER',
+                is_premium: false
             },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
@@ -71,7 +72,7 @@ export async function login(ctx) {
     }
 
     try {
-        const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+        const { data: user, error } = await supabase.from('users').select('id, name, avatar, is_premium, password_hash').eq('email', email).single();
         if (error || !user) {
             ctx.status = 401;
             ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
@@ -118,7 +119,7 @@ export async function refreshToken(ctx) {
         const userId = ctx.state.user.id;
         const { data: user, error } = await supabase
             .from('users')
-            .select('*')
+            .select('id, name, avatar, is_premium')
             .eq('id', userId)
             .single();
         if (error || !user) throw new Error("User not found");

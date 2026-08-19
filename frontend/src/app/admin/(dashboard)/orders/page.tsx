@@ -30,8 +30,7 @@ export default function AdminOrderManagement() {
         return orders.filter((order) => {
             const matchesSearch =
                 order.order_code.toString().includes(searchQuery) ||
-                order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                order.user_id.id.toLowerCase().includes(searchQuery.toLowerCase());
+                order.user_id.name.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesStatus = activeTab === "ALL" || order.status === activeTab;
             return matchesSearch && matchesStatus;
         });
@@ -70,7 +69,7 @@ export default function AdminOrderManagement() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] p-4 md:p-8 font-sans text-slate-900 dark:text-slate-100 transition-colors">
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] p-4 md:p-1 font-sans text-slate-900 dark:text-slate-100 transition-colors">
             <div className="max-w-full mx-auto space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                     <div>
@@ -103,7 +102,7 @@ export default function AdminOrderManagement() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Tìm ID, Mã đơn, Tên KH..."
+                                placeholder="Tìm Mã đơn, Tên KH..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"

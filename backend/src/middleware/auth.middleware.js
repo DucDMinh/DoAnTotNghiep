@@ -51,3 +51,17 @@ export const requireAdmin = async (ctx, next) => {
     }
     await next();
 };
+
+export const requirePremium = async (ctx, next) => {
+    const user = ctx.state.user;
+    if (!user || !user.is_premium) {
+        ctx.status = 403;
+        ctx.body = {
+            success: false,
+            message: "Từ chối truy cập: Tính năng dành riêng cho hội viên Premium!",
+            user: user
+        };
+        return;
+    }
+    await next();
+}
