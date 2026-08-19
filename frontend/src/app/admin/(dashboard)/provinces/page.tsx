@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster, toast } from 'sonner';
 import { Plus, MapPin, Search, Globe, Sparkles, Map } from "lucide-react";
 import { Province } from "@/interface";
 import { ProvinceTable } from "@/components/tables/admin/provinceTable";
@@ -150,7 +150,7 @@ export default function ProvincesPage() {
     return (
         <div className="min-h-screen pb-12">
             <PageBreadcrumb pageTitle="Quản lý Tỉnh/Thành phố" />
-            <Toaster position="top-right" reverseOrder={false} />
+            <Toaster richColors position="top-right" />
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}

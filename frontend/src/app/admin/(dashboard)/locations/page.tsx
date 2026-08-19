@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { supabase } from "@/utils/supabaseClient";
 import { AddLocationModal } from "@/components/modals/admin/addLocation";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster, toast } from 'sonner';
 import { Plus, MapPin, Search, Filter, Globe, Sparkles, Map } from "lucide-react";
 import { LocationTable } from "@/components/tables/admin/locationsTable";
 import type { Location } from "@/interface";
@@ -399,7 +399,7 @@ export default function LocationsPage() {
   return (
     <div className="min-h-screen pb-12">
       <PageBreadcrumb pageTitle="Quản lý Không gian & Địa điểm" />
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster richColors position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

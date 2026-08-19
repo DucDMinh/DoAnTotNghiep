@@ -8,7 +8,7 @@ import {
     Shield, Trash2, LogOut, ChevronRight,
     Smartphone, Mail
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";

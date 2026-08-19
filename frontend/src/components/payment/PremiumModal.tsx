@@ -7,7 +7,7 @@ import { usePayOS } from "@payos/payos-checkout";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Crown, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 
 interface PremiumModalProps {
     onClose: () => void;

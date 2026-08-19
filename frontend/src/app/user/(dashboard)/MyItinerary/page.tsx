@@ -11,7 +11,7 @@ import {
     PlaneTakeoff,
     Archive
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { Itinerary } from "@/interface";
 import { MyItineraryCard } from "@/components/user/MyItinerary/MyItineraryCard";
 import { api } from "@/lib/apiClient";

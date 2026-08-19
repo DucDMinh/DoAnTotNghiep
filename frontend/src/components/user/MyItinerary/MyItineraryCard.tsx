@@ -14,7 +14,7 @@ import {
     Share2,
     Lock
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 function WashiTape({ color = "var(--washi-teal)", className = "" }: { color?: string; className?: string }) {
     return (
         <div className={`washi-tape z-10 ${className}`} style={{ ["--washi-color" as any]: color }} />

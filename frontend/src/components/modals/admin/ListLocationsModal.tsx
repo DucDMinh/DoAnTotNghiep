@@ -1,4 +1,3 @@
-import { Location } from "@/interface"
 
 interface ListLocationsModalProps {
     onClose: () => void;
@@ -6,7 +5,6 @@ interface ListLocationsModalProps {
 }
 
 export const ListLocationsModal: React.FC<ListLocationsModalProps> = ({
-    onClose,
     setIsListModalOpen,
 }) => {
     return (

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Calendar, Type, ArrowRight, Sparkles } from "lucide-react";
 import { Province } from "@/interface";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { api } from "@/lib/apiClient";
 import { useDashboard } from "@/app/user/(dashboard)/layout";
 import { useAuth } from "@/hooks/auth/AuthContext";

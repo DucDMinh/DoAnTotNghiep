@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { CheckCircle2, Map, Plus } from "lucide-react";
 import { useRef, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 
 export const DroppableActivityZone = ({
     dayId,

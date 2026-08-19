@@ -4,7 +4,7 @@
 "use client";
 
 import React, { useState, useEffect, createContext, useContext } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { AppHeader } from "@/layout/user/AppHeader";
 import { usePathname } from "next/navigation";
 import GlobalStyles from "@/components/user/GlobalStyles";

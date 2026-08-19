@@ -4,7 +4,7 @@ import './globals.css';
 import "flatpickr/dist/flatpickr.css";
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sonner';
 import { AuthProvider } from '@/hooks/auth/AuthContext';
 
 const outfit = Outfit({
@@ -29,7 +29,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SidebarProvider>
               {children}
-              <Toaster position="top-right" reverseOrder={false} />
+              <Toaster richColors position="top-right" />
             </SidebarProvider>
           </ThemeProvider>
         </AuthProvider>

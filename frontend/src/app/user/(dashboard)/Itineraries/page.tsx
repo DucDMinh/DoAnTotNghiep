@@ -11,7 +11,7 @@ import {
     TrendingUp, Compass, UserCircle
 } from "lucide-react";
 import { Itinerary } from "@/interface";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { api } from "@/lib/apiClient"; // Nhớ import hàm api của bạn
 
 const THEMES = ["Biển đảo", "Núi rừng", "Văn hóa", "Cắm trại", "Chữa lành"];

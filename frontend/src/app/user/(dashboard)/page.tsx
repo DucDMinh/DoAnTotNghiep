@@ -15,7 +15,7 @@ import {
     Award,
     Edit3,
 } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { Toaster, toast } from 'sonner';
 import confetti from "canvas-confetti";
 import { Itinerary, Location, User } from "@/interface";
 import { api } from "@/lib/apiClient";
@@ -98,7 +98,7 @@ export default function JournifyUserDashboard() {
         }
 
         if (errorCookie) {
-            currentToastId = toast.error(
+            toast.error(
                 errorCookie === "TOKEN_EXPIRED"
                     ? "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!"
                     : "Vui lòng đăng nhập để tiếp tục."
@@ -106,11 +106,7 @@ export default function JournifyUserDashboard() {
             document.cookie = "toast_error=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         }
 
-        return () => {
-            if (currentToastId) {
-                toast.remove(currentToastId);
-            }
-        };
+        return;
     }, []);
     const fetchItineraries = async () => {
         try {
@@ -205,7 +201,6 @@ export default function JournifyUserDashboard() {
 
     return (
         <div className="min-h-screen bg-[var(--bg-paper)] text-[var(--text-main)] transition-colors selection:bg-[var(--accent-primary)] selection:text-white">
-            <Toaster position="top-right" />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-20 md:pb-10">
                 {activeNav === "dashboard" && (
                     <div className="space-y-12 md:space-y-16">
@@ -307,8 +302,6 @@ export default function JournifyUserDashboard() {
                                         <p className="text-sm">Đăng nhập để xem thống kê cá nhân.</p>
                                     </div>
                                 )}
-
-
                             </div>
                             <WishlistPreview wishlist={wishlist} setIsAiModalOpen={setIsAiModalOpen} />
                         </section>

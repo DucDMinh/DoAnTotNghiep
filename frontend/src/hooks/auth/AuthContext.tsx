@@ -2,7 +2,7 @@
 import { User } from "@/interface";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import toast from "react-hot-toast";
+import { Toaster, toast } from 'sonner';
 
 interface AuthContextType {
     user: User | null;
@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return (
         <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, login, logout }}>
+            <Toaster richColors position="top-right" />
             {children}
         </AuthContext.Provider>
     );

@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Users, RefreshCw, UserPlus } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { api } from "@/lib/apiClient";
 import { User, UserRole } from "@/interface";
 import { supabase } from "@/utils/supabaseClient";

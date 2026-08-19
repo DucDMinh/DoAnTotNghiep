@@ -5,7 +5,7 @@ import { X, UserPlus, Pencil, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { User } from "@/interface";
 import { api } from "@/lib/apiClient";
 

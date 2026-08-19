@@ -2,7 +2,7 @@
 import { BuilderScreenProp, Itinerary_days, Itinerary_locations } from "@/interface";
 import { useState } from "react";
 import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import React from "react";
 import { api } from "@/lib/apiClient";

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Order } from '@/interface';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { api } from '@/lib/apiClient';
 
 const TABS = [

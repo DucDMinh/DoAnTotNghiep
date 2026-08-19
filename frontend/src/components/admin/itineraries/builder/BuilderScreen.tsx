@@ -4,7 +4,7 @@ import { useState } from "react";
 import { BuilderScreenProp } from "@/interface";
 import React from "react";
 import { DndContext, DragOverlay } from '@dnd-kit/core';
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import dynamic from "next/dynamic";
 import { Compass } from "lucide-react";
 import { useItineraryBuilder } from "@/hooks/admin/Itineraries/useItineraryBuilder";

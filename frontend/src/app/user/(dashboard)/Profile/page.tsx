@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
 import { User, Itinerary } from "@/interface";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 
 export default function UserProfilePage() {
     const [activeTab, setActiveTab] = useState("trips");

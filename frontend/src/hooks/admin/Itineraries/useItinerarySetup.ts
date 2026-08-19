@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Itinerary, Province, SetupScreenProp, Location } from "@/interface";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 
 export const useItinerarySetup = (props: SetupScreenProp) => {
     const { selectedProvinces, setSelectedProvinces, setLocations, setStep, setCurrentItinerary, step } = props;

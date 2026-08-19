@@ -13,7 +13,7 @@ import {
   LogIn,
   AlertCircle
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { api } from "@/lib/apiClient";
 import { useSearchParams } from "next/navigation";

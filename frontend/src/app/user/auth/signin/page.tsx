@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, ArrowRight, Compass } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { useAuth } from "@/hooks/auth/AuthContext";
 
 export default function AuthScreen() {
@@ -52,11 +52,9 @@ export default function AuthScreen() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        toast.remove(toastId);
         login(result.token, result.user);
         toast.success(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!", { id: toastId });
         setTimeout(() => {
-          toast.remove(toastId);
           router.push('/');
         }, 500);
       } else {

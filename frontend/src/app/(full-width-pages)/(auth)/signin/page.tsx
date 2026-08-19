@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, ArrowRight, Compass } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { useAuth } from "@/hooks/auth/AuthContext";
 
 export default function AuthScreen() {

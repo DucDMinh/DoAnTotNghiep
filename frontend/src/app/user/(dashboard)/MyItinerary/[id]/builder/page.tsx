@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { toast } from "react-hot-toast";
+import { toast } from 'sonner';
 import { Compass } from "lucide-react";
 import { api } from "@/lib/apiClient";
 import { BuilderScreen } from "@/components/admin/itineraries/builder/BuilderScreen";

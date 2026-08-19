@@ -5,7 +5,7 @@ import { CompassIcon, Send, Sparkles, X, Lock, Crown } from "lucide-react";
 import { useState } from "react";
 import { TripDetailModal2 } from "./TripDetailModal2";
 import { useAuth } from "@/hooks/auth/AuthContext";
-import toast from "react-hot-toast";
+import { toast } from 'sonner';
 import { api } from "@/lib/apiClient";
 
 export function AiPlannerModal({
