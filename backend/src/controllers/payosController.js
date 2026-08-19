@@ -66,7 +66,7 @@ export async function ReceiveWebhook(ctx) {
             if (order && order.status === 'PENDING') {
                 await supabase
                     .from('orders')
-                    .update({ status: 'PAID' })
+                    .update({ status: 'PAID', description: paymentData.description, counterAccountNumber: paymentData.counterAccountNumber })
                     .eq('id', order.id);
                 await supabase
                     .from('users')

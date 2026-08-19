@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAuth } from "@/hooks/auth/AuthContext";
@@ -69,7 +70,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                 } catch (error) {
                     toast.error("Có lỗi khi làm mới dữ liệu, vui lòng F5 trang.", { id: toastId });
                 }
-            }, 2000); // 5000ms = 5 giây
+            }, 2000);
         },
         onCancel: (event: any) => {
             console.log("Khách đã hủy thanh toán:", event);
@@ -153,6 +154,7 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
                     <button
                         onClick={() => {
                             if (isOpen) exit();
+                            handleCancelOrder(orderId)
                             onClose();
                         }}
                         disabled={isCreatingLink}

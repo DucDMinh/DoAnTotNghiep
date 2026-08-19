@@ -21,7 +21,6 @@ export default function LocationsPage() {
   const [filterProvince, setFilterProvince] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,12 +35,8 @@ export default function LocationsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const searchParams = useSearchParams();
-
-  // 2. Lấy chữ từ URL ném làm giá trị khởi tạo cho biến searchQuery
   const initialSearch = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-
-  // === CÁC HÀM XỬ LÝ LOGIC (Giữ nguyên hoàn toàn sự ổn định của bạn) ===
 
   const handleExtractFromLink = async () => {
     if (!mapLink) {

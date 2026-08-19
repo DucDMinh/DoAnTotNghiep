@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Dispatch, SetStateAction } from "react";
 
 export interface Location {
@@ -174,10 +175,12 @@ export interface User {
 
 export interface Order {
     id: string;
-    create_at: string;
+    created_at: string;
     status: string;
-    user_id: string;
+    user_id: string | { id: string; name: string; avatar?: string } | any;
     amount: number;
-    order_code: number
+    order_code: number,
+    description: string;
+    counterAccountNumber: string;
 }
 export type UserRole = "ADMIN" | "USER";

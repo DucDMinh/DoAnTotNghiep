@@ -5,11 +5,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../../context/SidebarContext";
 import {
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  TableIcon,
-} from "../../icons/index";
+  LayoutDashboard,
+  MapPin,
+  Map,
+  Route,
+  Users,
+  Receipt,
+  ChevronDownIcon
+} from "lucide-react";
+import { HorizontaLDots } from "@/icons";
 
 
 type NavItem = {
@@ -21,28 +25,34 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
+    icon: <LayoutDashboard className="w-5 h-5" />,
     name: "Tổng quan",
     path: "/",
   },
   {
-    icon: <TableIcon />,
+    icon: <MapPin className="w-5 h-5" />,
     name: "Địa điểm",
     path: "/locations",
   },
   {
-    icon: <TableIcon />,
+    icon: <Map className="w-5 h-5" />,
     name: "Tỉnh/Thành phố",
     path: "/provinces",
   },
   {
-    icon: <TableIcon />,
+    icon: <Route className="w-5 h-5" />,
     name: "Lộ trình",
     path: "/itineraries",
-  }, {
-    icon: <TableIcon />,
+  },
+  {
+    icon: <Users className="w-5 h-5" />,
     name: "Người dùng",
     path: "/users",
+  },
+  {
+    icon: <Receipt className="w-5 h-5" />,
+    name: "Giao dịch",
+    path: "/orders",
   },
 ];
 
