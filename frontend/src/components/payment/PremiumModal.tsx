@@ -49,17 +49,27 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [isCreatingLink, setIsCreatingLink] = useState(false);
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, login } = useAuth();
     const [orderId, setOrderId] = useState('');
     const [payOSConfig, setPayOSConfig] = useState({
-        RETURN_URL: 'http://localhost:3000',
+        RETURN_URL: window.location.href,
         ELEMENT_ID: "embedded-payment-container",
         CHECKOUT_URL: '',
         embedded: true,
         onSuccess: (event: any) => {
             setIsOpen(false);
-            setMessage("Thanh toán thành công! Tài khoản của bạn đã được nâng cấp.");
-            console.log("Dữ liệu thanh toán thành công:", event);
+            const toastId = toast.loading("Thanh toán thành công! Đang cập nhật hệ thống...");
+            setTimeout(async () => {
+                try {
+                    const { data, response } = await api.get('/auth/refresh-token');
+                    if (!response.ok) throw new Error("Co loi xay ra")
+                    login(data.token, data.user);
+                    toast.success("Tài khoản đã được nâng cấp Premium 👑", { id: toastId });
+                    setMessage("Cảm ơn bạn! Tài khoản của bạn đã là Premium.");
+                } catch (error) {
+                    toast.error("Có lỗi khi làm mới dữ liệu, vui lòng F5 trang.", { id: toastId });
+                }
+            }, 2000); // 5000ms = 5 giây
         },
         onCancel: (event: any) => {
             console.log("Khách đã hủy thanh toán:", event);
@@ -72,11 +82,12 @@ export function PremiumModal({ onClose }: PremiumModalProps) {
     const handleCreateOrder = async (selectedPlan: number) => {
         setIsCreatingLink(true);
         const toastId = toast.loading("Đang khởi tạo giao dịch...");
-
+        const currentUrl = window.location.href;
         try {
             const { data, response } = await api.post('/create-embedded-payment-link', {
                 selectedPlan: selectedPlan,
-                userId: currentUser?.id
+                userId: currentUser?.id,
+                returnUrl: currentUrl
             });
 
             if (!response.ok) {

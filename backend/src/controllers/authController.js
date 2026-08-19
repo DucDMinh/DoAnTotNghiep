@@ -112,3 +112,36 @@ export async function login(ctx) {
         ctx.body = { success: false, message: "Lỗi máy chủ!" };
     }
 }
+
+export async function refreshToken(ctx) {
+    try {
+        const userId = ctx.state.user.id;
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        if (error || !user) throw new Error("User not found");
+        const newToken = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role || 'USER',
+                is_premium: user.is_premium,
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+        delete user.password_hash;
+        ctx.status = 200;
+        ctx.body = {
+            success: true,
+            token: newToken,
+            user: user
+        };
+    } catch (error) {
+        console.error("Lỗi tại refreshToken:", error);
+        ctx.status = 500;
+        ctx.body = { success: false, message: "Lỗi máy chủ!" };
+    }
+}

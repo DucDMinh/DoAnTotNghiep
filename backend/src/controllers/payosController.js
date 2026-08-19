@@ -12,7 +12,7 @@ const payOS = new PayOS({
 
 export async function CreateEmbeddedPaymentLink(ctx) {
     try {
-        const { selectedPlan, userId } = ctx.request.body;
+        const { selectedPlan, userId, returnUrl } = ctx.request.body;
         const amount = selectedPlan * 1000;
         const orderCode = Number(String(Date.now()).slice(-6));
         const { data: order, error: dbError } = await supabase
@@ -31,8 +31,8 @@ export async function CreateEmbeddedPaymentLink(ctx) {
             orderCode: orderCode,
             amount: amount,
             description: 'Nang cap Premium',
-            returnUrl: `${process.env.YOUR_DOMAIN}`,
-            cancelUrl: `${process.env.YOUR_DOMAIN}`,
+            returnUrl: returnUrl,
+            cancelUrl: returnUrl,
         };
 
         const paymentLinkResponse = await payOS.paymentRequests.create(body);
