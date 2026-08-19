@@ -54,16 +54,12 @@ const LEADERBOARD = [
     { id: 3, name: "Hoàng Oanh", role: "Local Guide", points: 1520, avatar: "https://i.pravatar.cc/150?u=7" }
 ];
 
-// --- COMPONENT CHÍNH ---
 export default function CommunityPage() {
     const [activeTopic, setActiveTopic] = useState("Tất cả");
 
     return (
         <div className="min-h-screen bg-[var(--bg-paper)] pb-20">
-
-            {/* 🌟 1. HERO BANNER */}
             <div className="relative bg-slate-900 overflow-hidden">
-                {/* Background Image & Overlay */}
                 <div className="absolute inset-0">
                     <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000" alt="Community" className="w-full h-full object-cover opacity-40" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-paper)] via-slate-900/60 to-transparent" />
@@ -76,16 +72,12 @@ export default function CommunityPage() {
                     <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-gray-300 text-sm md:text-base mb-8 max-w-2xl mx-auto">
                         Cộng đồng đam mê xê dịch. Nơi chia sẻ lịch trình, kết bạn đồng hành và giải đáp mọi thắc mắc trên từng chuyến đi.
                     </motion.p>
-
-                    {/* Search Bar */}
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="max-w-2xl mx-auto mb-10 relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <Search className="h-5 w-5 text-gray-400 group-focus-within:text-[var(--accent-primary)] transition-colors" />
                         </div>
                         <input type="text" className="block w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:bg-slate-900/80 transition-all shadow-lg" placeholder="Tìm kiếm bài viết, thành viên, hashtag hoặc địa điểm..." />
                     </motion.div>
-
-                    {/* Quick CTAs */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex flex-wrap justify-center gap-4">
                         <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--accent-primary)] text-white font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all">
                             <PenSquare className="w-4 h-4" /> Đăng bài chia sẻ
@@ -99,9 +91,7 @@ export default function CommunityPage() {
                     </motion.div>
                 </div>
             </div>
-
-            {/* 🌟 4. TOPICS / TAGS (Scrollable Horizontal) */}
-            <div className="border-b border-[var(--border-color)] bg-[var(--bg-card)] sticky top-0 z-40 shadow-sm">
+            <div className="border-b border-[var(--border-color)] bg-[var(--bg-card) top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex overflow-x-auto py-3 gap-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {TOPICS.map(topic => (
