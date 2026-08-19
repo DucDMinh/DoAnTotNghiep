@@ -10,9 +10,9 @@ class LocationController extends BaseController {
         try {
             const payload = { ...ctx.request.body };
             const file = ctx.request.file;
-            console.log("Received file:", file); // Debugging line to check the received file
+            console.log("Received file:", file);
             if (file) {
-                const imageUrl = await uploadImageToStorage(file, 'locations'); // Specify the folder name in Supabase Storage
+                const imageUrl = await uploadImageToStorage(file, 'locations');
                 payload.img = imageUrl;
             }
             const data = await this.repository.create(payload);
