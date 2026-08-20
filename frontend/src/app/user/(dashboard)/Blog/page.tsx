@@ -171,7 +171,7 @@ export default function BlogPage() {
                                         Xem tất cả {post.comments} bình luận
                                     </p>
                                     <div className="flex items-center gap-3 mt-3">
-                                        <img src="https://i.pravatar.cc/150?img=11" alt="avatar" className="w-7 h-7 rounded-full object-cover" />
+                                        <img src={currentUser?.avatar} alt="avatar" className="w-7 h-7 rounded-full object-cover" />
                                         <input
                                             type="text"
                                             placeholder="Thêm bình luận..."

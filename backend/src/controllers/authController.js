@@ -72,7 +72,7 @@ export async function login(ctx) {
     }
 
     try {
-        const { data: user, error } = await supabase.from('users').select('id, name, avatar, is_premium, password_hash').eq('email', email).single();
+        const { data: user, error } = await supabase.from('users').select('id, name, avatar, is_premium, password_hash, role').eq('email', email).single();
         if (error || !user) {
             ctx.status = 401;
             ctx.body = { success: false, message: "Email hoặc mật khẩu không đúng!" };
@@ -119,7 +119,7 @@ export async function refreshToken(ctx) {
         const userId = ctx.state.user.id;
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, name, avatar, is_premium')
+            .select('id, name, avatar, is_premium, role')
             .eq('id', userId)
             .single();
         if (error || !user) throw new Error("User not found");

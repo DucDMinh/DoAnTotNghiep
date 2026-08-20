@@ -22,7 +22,6 @@ export default function ItineraryBuilderPage() {
     useEffect(() => {
         const fetchInitialWorkspace = async () => {
             if (!tripId) return;
-
             try {
                 const { data, response } = await api.get(`/itineraries/${tripId}`);
                 if (!response.ok) throw new Error("Không thể tải dữ liệu lộ trình");
@@ -34,11 +33,15 @@ export default function ItineraryBuilderPage() {
                     .filter(Boolean) || [];
                 setSelectedProvinces(provinces);
                 if (provinces.length > 0) {
-                    const provinceIds = provinces.map((p: Province) => p.id).join(',');
-                    const locRes = await api.get(`/locations?province_ids=${provinceIds}`);
-                    if (locRes.response?.ok) {
-                        setLocations(locRes.data?.data || locRes.data);
-                    }
+                    const results = await Promise.all(
+                        provinces.map((province: Province) =>
+                            api.get(`/provinces/${province.id}`)
+                        )
+                    );
+                    const locations = results
+                        .filter((res) => res.response?.ok)
+                        .flatMap((res) => res.data?.data?.locations || res.data?.locations || []);
+                    setLocations(locations);
                 }
             } catch (error) {
                 console.error("Lỗi khởi tạo Workspace:", error);

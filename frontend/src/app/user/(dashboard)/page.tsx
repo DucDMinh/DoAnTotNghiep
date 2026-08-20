@@ -29,6 +29,8 @@ import { RegionExplore } from "@/components/user/HomePage/RegionExplore";
 import { WishlistPreview } from "@/components/user/HomePage/WishlistPreview";
 import { useDashboard } from "@/app/user/(dashboard)/layout";
 import { useRouter } from "next/navigation";
+import { PremiumModal } from "@/components/payment/PremiumModal";
+import { AiPlannerModal } from "@/components/modals/user/AiPlannerModal";
 
 interface BlogTip {
     title: string;
@@ -75,6 +77,7 @@ export default function JournifyUserDashboard() {
     const [wishlist, setWishlist] = useState<Location[]>([]);
     const [activeTripDetail, setActiveTripDetail] = useState<Itinerary | null>(null);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
     const [isCreatingTrip, setIsCreatingTrip] = useState(false);
     const router = useRouter();
     const { notify } = useDashboard();
@@ -326,7 +329,24 @@ export default function JournifyUserDashboard() {
                     </div>
                 )}
             </main>
-
+            <AnimatePresence>
+                {isAiModalOpen && (
+                    <AiPlannerModal
+                        onClose={() => setIsAiModalOpen(false)}
+                        onSuccess={(newTrip) => {
+                        }}
+                        onOpenPremium={() => setIsPaymentModalOpen(true)}
+                        notify={notify}
+                    />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {isPaymentModalOpen && (
+                    <PremiumModal
+                        onClose={() => setIsPaymentModalOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
             <AnimatePresence>
                 {activeTripDetail && (
                     <TripDetailModal2 currentUser={currentUser} itinerary={activeTripDetail} onClose={() => setActiveTripDetail(null)} onClone={() => handleCloneTrip(activeTripDetail)} />
