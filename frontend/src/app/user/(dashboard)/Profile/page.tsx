@@ -19,7 +19,7 @@ export default function UserProfilePage() {
     const [activeTab, setActiveTab] = useState("trips");
     const [user, setUser] = useState<User | undefined>();
     const [isLoading, setIsLoading] = useState(true);
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, login } = useAuth();
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [bgFile, setBgFile] = useState<File | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -86,12 +86,14 @@ export default function UserProfilePage() {
             }
 
             const { response, data } = await api.patch(`/users/${user.id}`, body);
-            if (!response.ok) throw new Error(data?.error || "Cập nhật thất bại!");
-
+            if (!response.ok) throw new Error(data?.error_detail || "Cập nhật thất bại!");
             toast.success("Cập nhật thông tin thành công!", { id: toastId });
             setAvatarFile(null);
             setBgFile(null);
-            await fetchUserData();
+            const { data: data1, response: response1 } = await api.get('/auth/refresh-token');
+            if (!response1.ok) throw new Error(data1?.error_detail || "Cập nhật thất bại!");
+            login(data1.token, data1.user)
+
         } catch (error: any) {
             console.error("Lỗi cập nhật:", error);
             toast.error(error.message || "Cập nhật thất bại!", { id: toastId });

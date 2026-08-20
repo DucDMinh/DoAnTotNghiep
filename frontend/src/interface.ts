@@ -184,3 +184,15 @@ export interface Order {
     counterAccountNumber: string;
 }
 export type UserRole = "ADMIN" | "USER";
+
+export interface Blog {
+    id: string,
+    user_id: User,
+    location: string,
+    created_at: string,
+    content: string,
+    blog_image: string,
+    likes: number,
+    comments: number,
+    shares: number
+}

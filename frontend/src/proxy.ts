@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/', request.url));
     }
 
-    const protectedUserRoutes = ['/MyItinerary', '/settings'];
+    const protectedUserRoutes = ['/MyItinerary', '/settings', '/Blog'];
     const isAccessingProtectedRoute = protectedUserRoutes.some(route =>
         url.pathname.startsWith(route)
     );

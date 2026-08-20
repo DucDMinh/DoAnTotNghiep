@@ -7,6 +7,7 @@ import { TripDetailModal2 } from "./TripDetailModal2";
 import { useAuth } from "@/hooks/auth/AuthContext";
 import { toast } from 'sonner';
 import { api } from "@/lib/apiClient";
+import { useRouter } from "next/navigation";
 
 export function AiPlannerModal({
     onClose,
@@ -27,6 +28,7 @@ export function AiPlannerModal({
     const [isGenerating, setIsGenerating] = useState(false);
     const [stepText, setStepText] = useState("");
     const { user: currentUser } = useAuth();
+    const router = useRouter();
     const isPremium = currentUser?.is_premium === true;
 
     const handleGenerate = async (e: React.FormEvent) => {
@@ -222,7 +224,12 @@ export function AiPlannerModal({
                         <button
                             onClick={() => {
                                 onClose();
-                                if (onOpenPremium) onOpenPremium();
+                                if (currentUser) {
+                                    onOpenPremium?.();
+                                } else {
+                                    router.push('/auth/signin');
+                                    toast.error("Vui lòng đăng nhập để tiếp tục")
+                                }
                             }}
                             className="w-full sm:w-auto mt-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm font-bold shadow-lg shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
