@@ -194,5 +194,6 @@ export interface Blog {
     blog_image: string,
     likes: number,
     comments: number,
-    shares: number
+    shares: number,
+    is_liked: boolean | false
 }

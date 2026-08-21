@@ -6,6 +6,21 @@ class BlogController extends BaseController {
     constructor() {
         super(blogRepo, "Blogs");
     }
+    getAll = async (ctx) => {
+        try {
+            const user_id = ctx.state.user.id;
+            const { data, error } = await this.repository.getAll(user_id);
+            if (error) throw new Error(error);
+            ctx.status = 200;
+            ctx.body = {
+                success: true,
+                data: data
+            }
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = { success: false, message: `Lỗi hệ thống`, error_detail: error.message };
+        }
+    }
     create = async (ctx) => {
         try {
             const payload = { ...ctx.request.body };
@@ -76,6 +91,44 @@ class BlogController extends BaseController {
             ctx.body = { success: false, message: `Lỗi hệ thống khi xóa ${this.itemName}`, error_detail: error.message };
         }
     }
+    likeBlog = async (ctx) => {
+        try {
+            const blog_id = ctx.params.id;
+            const user_id = ctx.state.user.id;
+            const payload = {
+                p_user_id: user_id,
+                p_blog_id: blog_id
+            }
+            const data = await this.repository.likeBlog(payload)
+            ctx.status = 201;
+            ctx.body = {
+                success: true
+            }
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = {
+                success: false,
+                message: `${error}`
+            }
+        }
+    }
+    unlikeBlog = async (ctx) => {
+        try {
+            const blog_id = ctx.params.id;
+            const user_id = ctx.state.user.id;
+            await this.repository.unlikeBlog(blog_id, user_id);
+            ctx.status = 201;
+            ctx.body = {
+                success: true
+            }
+        } catch (error) {
+            ctx.status = 500;
+            ctx.body = {
+                success: false,
+                message: error
+            }
+        }
+    }
 }
 
 const blogController = new BlogController();
@@ -84,3 +137,5 @@ export const createBlog = blogController.create;
 export const deleteBlog = blogController.delete;
 export const updateBlog = blogController.update;
 export const getBlogById = blogController.getById;
+export const likeBlog = blogController.likeBlog;
+export const unlikeBlog = blogController.unlikeBlog;

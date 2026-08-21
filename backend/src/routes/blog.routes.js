@@ -12,4 +12,7 @@ router.post('/', verifyToken, upload.single('blog_image'), blogController.create
 router.patch('/:id', verifyToken, upload.single('blog_image'), blogController.updateBlog);
 router.delete('/:id', verifyToken, blogController.deleteBlog);
 
+router.post('/:id/like', verifyToken, blogController.likeBlog);
+router.post('/:id/unlike', verifyToken, blogController.unlikeBlog)
+
 export default router;

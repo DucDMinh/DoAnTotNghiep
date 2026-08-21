@@ -30,7 +30,7 @@ export default function BlogPage() {
             if (!response.ok) {
                 toast.error(`${data.message}`)
             }
-            setPosts(data.data.data)
+            setPosts(data.data)
         } catch (error) {
             toast.error(`Co loi xay ra: ${error}`)
         }
@@ -55,6 +55,53 @@ export default function BlogPage() {
             year: 'numeric'
         }).format(date);
     };
+    const handleLikeBlog = async (blog_id: string) => {
+        try {
+            const { data, response } = await api.post(`/blogs/${blog_id}/like`);
+            if (!response.ok) throw new Error(data.message);
+            handleToggleHeart(blog_id, 'like')
+        } catch (error) {
+            toast.error(`${error}`)
+        }
+    }
+    const handleUnLikeBlog = async (blog_id: string) => {
+        try {
+            const { data, response } = await api.post(`/blogs/${blog_id}/unlike`);
+            if (!response.ok) throw new Error(data.message);
+            handleToggleHeart(blog_id, 'unlike')
+        } catch (error) {
+            toast.error(`${error}`)
+        }
+    }
+    const handleToggleHeart = (blog_id: string, method: string) => {
+        if (method == "like") {
+            setPosts(prevPosts =>
+                prevPosts.map(post => {
+                    if (post.id === blog_id) {
+                        return {
+                            ...post,
+                            is_liked: true,
+                            likes: post.likes + 1
+                        };
+                    }
+                    return post;
+                })
+            );
+        } else {
+            setPosts(prevPosts =>
+                prevPosts.map(post => {
+                    if (post.id === blog_id) {
+                        return {
+                            ...post,
+                            is_liked: false,
+                            likes: post.likes - 1
+                        };
+                    }
+                    return post;
+                })
+            );
+        }
+    }
     return (
         <div className="min-h-screen bg-[var(--bg-paper)] py-6 md:py-8">
             <div className="max-w-2xl mx-auto px-4 sm:px-6">
@@ -144,10 +191,21 @@ export default function BlogPage() {
                                 <div className="p-2 flex items-center justify-between">
                                     <div className="flex items-center gap-1">
                                         <button
-                                            onClick={() => { }}
+                                            onClick={() => {
+                                                if (!post.is_liked) {
+                                                    handleLikeBlog(post.id)
+                                                } else {
+                                                    handleUnLikeBlog(post.id)
+                                                }
+                                            }}
                                             className="p-2 hover:opacity-70 transition-opacity"
                                         >
-                                            <Heart className={`w-7 h-7 transition-colors text-[var(--text-main)]`} />
+                                            <Heart
+                                                className={`w-7 h-7 transition-colors ${post.is_liked
+                                                    ? 'fill-rose-500 text-rose-500'
+                                                    : 'text-[var(--text-main)]'
+                                                    }`}
+                                            />
                                         </button>
                                         <button className="p-2 hover:opacity-70 transition-opacity">
                                             <MessageCircle className="w-7 h-7 text-[var(--text-main)]" />
