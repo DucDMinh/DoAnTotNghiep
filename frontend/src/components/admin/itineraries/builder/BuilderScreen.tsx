@@ -50,7 +50,9 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
         handleUpdateActivity,
         handleAddItinerary,
         handleAddActivity,
-        handleRemoveActivity, handleAddLocationToItinerary } = useItineraryBuilder(props);
+        handleRemoveActivity,
+        handleAddLocationToItinerary,
+        handleMoveActivity } = useItineraryBuilder(props);
     const {
         isDropdownOpen,
         setIsDropdownOpen,
@@ -58,7 +60,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
         setSearchProvince,
         filteredProvinces,
         fetchProvinces,
-        fetchAllSelectedLocations
+        fetchAllSelectedLocations,
     } = useItinerarySetup({
         ...props,
         step: "BUILDER"
@@ -157,6 +159,7 @@ export const BuilderScreen: React.FC<BuilderScreenProp> = (props) => {
                         <div className="mt-6">
                             <DayCard
                                 days={days}
+                                handleMoveActivity={handleMoveActivity}
                                 handleAddActivity={handleAddActivity}
                                 handleRemoveActivity={handleRemoveActivity}
                                 handleUpdateActivity={handleUpdateActivity}

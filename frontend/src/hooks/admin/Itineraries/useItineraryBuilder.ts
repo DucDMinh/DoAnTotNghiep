@@ -296,10 +296,40 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
     const handleRemoveActivity = (dayId: string, activityId: string) => {
         setDays(prevDays => prevDays.map(day => {
             if (day.id === dayId) {
+                const filteredLocations = (day.itinerary_locations || []).filter((loc: Itinerary_locations) => loc.id !== activityId);
+                const reindexedLocations = filteredLocations.map((loc, index) => ({
+                    ...loc,
+                    sequence_order: index + 1
+                }));
+
                 return {
                     ...day,
-                    itinerary_locations: day.itinerary_locations.filter((loc: Itinerary_locations) => loc.id !== activityId)
+                    itinerary_locations: reindexedLocations
                 };
+            }
+            return day;
+        }));
+    };
+
+    const handleMoveActivity = (dayId: string, activityId: string, direction: 'UP' | 'DOWN') => {
+        setDays(prevDays => prevDays.map(day => {
+            if (day.id === dayId) {
+                const locs = [...(day.itinerary_locations || [])];
+                const index = locs.findIndex(l => l.id === activityId);
+                if (index === -1) return day;
+                if (direction === 'UP' && index > 0) {
+                    [locs[index - 1], locs[index]] = [locs[index], locs[index - 1]];
+                } else if (direction === 'DOWN' && index < locs.length - 1) {
+                    [locs[index + 1], locs[index]] = [locs[index], locs[index + 1]];
+                } else {
+                    return day;
+                }
+                const reindexedLocations = locs.map((loc, idx) => ({
+                    ...loc,
+                    sequence_order: idx + 1
+                }));
+
+                return { ...day, itinerary_locations: reindexedLocations };
             }
             return day;
         }));
@@ -370,6 +400,7 @@ export const useItineraryBuilder = (props: BuilderScreenProp) => {
         handleUpdateActivity,
         handleAddActivity,
         handleRemoveActivity,
-        handleAddLocationToItinerary
+        handleAddLocationToItinerary,
+        handleMoveActivity
     };
 };

@@ -1,12 +1,13 @@
 import { Itinerary_days, Itinerary_locations } from "@/interface";
 import { motion } from "framer-motion";
-import { DollarSign, MapPin, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, DollarSign, MapPin, Trash2 } from "lucide-react";
 import { DroppableActivityZone, DroppableAddButton } from "./ActivityDropZone";
 interface DayCardProp {
     days: Itinerary_days[];
     handleRemoveActivity: (dayId: string, activityId: string) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handleUpdateActivity: (dayId: string, activityId: string, field: string | object, value?: any) => void;
+    handleMoveActivity: (dayId: string, activityId: string, direction: 'UP' | 'DOWN') => void;
     setIsMapModalOpen: (isOpen: boolean) => void;
     setCurrentActiveDayId: (id: string | null) => void;
     setCurrentActiveLocId: (id: string | null) => void;
@@ -17,6 +18,7 @@ export const DayCard = ({
     days,
     handleRemoveActivity,
     handleUpdateActivity,
+    handleMoveActivity,
     setIsMapModalOpen,
     setCurrentActiveDayId,
     setCurrentActiveLocId,
@@ -33,15 +35,35 @@ export const DayCard = ({
                     </div>
                 </div>
                     <div className="p-4 space-y-4">
-                        {day.itinerary_locations?.map((loc: Itinerary_locations) => (
+                        {day.itinerary_locations?.map((loc: Itinerary_locations, index: number) => (
                             <div key={loc.id} id={`activity-${loc.id}`} className="group relative flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50 hover:border-brand-300 transition-colors">
-                                <button
-                                    onClick={() => handleRemoveActivity(day.id, loc.id)}
-                                    className="absolute right-3 top-3 p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-all dark:hover:bg-red-900/30"
-                                    title="Xóa hoạt động này"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700 bg-white">
+                                    <button
+                                        onClick={() => handleMoveActivity(day.id, loc.id, 'UP')}
+                                        disabled={index === 0}
+                                        className="p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                                        title="Chuyển lên trên"
+                                    >
+                                        <ChevronUp className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleMoveActivity(day.id, loc.id, 'DOWN')}
+                                        disabled={index === (day.itinerary_locations?.length || 0) - 1}
+                                        className="p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                                        title="Chuyển xuống dưới"
+                                    >
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-400 rounded-l-xl opacity-50"></div>
+                                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                                    <button
+                                        onClick={() => handleRemoveActivity(day.id, loc.id)}
+                                        className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 transition-colors"
+                                        title="Xóa hoạt động này"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                     <div className="lg:col-span-5">

@@ -34,11 +34,8 @@ export const LocationSidebar = ({ selectedProvinces, locations, onAddLocation, d
         (days || []).forEach((day: any) => {
             (day.itinerary_locations || []).forEach((loc: any) => {
                 if (loc.location_id) ids.add(loc.location_id);
-
-                // Trích xuất tọa độ an toàn tuyệt đối
                 const lat = Number(loc.lat || loc.locations?.lat || 0);
                 const lng = Number(loc.lng || loc.locations?.lng || 0);
-
                 if (lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng)) {
                     lastValidLoc = { lat, lng };
                 }
